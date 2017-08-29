@@ -114,6 +114,10 @@ http://help.autodesk.com/view/3DSMAX/2016/ENU/?guid=__files_GUID_A8663B8E_7E30_4
 
 3ds max file is OLE structured storage that contains streams.
 
+List of streams:
+
+    ['\x05DocumentSummaryInformation', '\x05SummaryInformation', 'ClassData', 'ClassDirectory3', 'Config', 'DllDirectory', 'FileAssetMetaData3', 'SaveConfigData', 'Scene', 'ScriptedCustAttribDefs', 'VideoPostQueue']
+
 The script uses a stream named '\x05DocumentSummaryInformation'.
 
 Below are notes on the structure of the stream.
