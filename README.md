@@ -108,66 +108,64 @@ Example:
 
 Read file properties from 3ds Max file.
 
-More about properties here
+More about properties here:
+
 http://help.autodesk.com/view/3DSMAX/2016/ENU/?guid=__files_GUID_A8663B8E_7E30_474E_B3DB_E21585F125B1_htm
 
 3ds max file is OLE structured storage that contains streams.
+
 The script uses a stream named '\x05DocumentSummaryInformation'.
 
 Below are notes on the structure of the stream.
 
-===================
 The stream begins with a list of headers
-===================
 
-1E 00 00 00 -- Header delimiter
-08 00 00 00 -- String length
-General
-00          -- Null terminator and padding
-03 00 00 00 -- Some value, may be delimiter
-04 00 00 00 -- Number of properties under the header
+    1E 00 00 00 -- Header delimiter
+    08 00 00 00 -- String length
+    General
+    00          -- Null terminator and padding
+    03 00 00 00 -- Some value, may be delimiter
+    04 00 00 00 -- Number of properties under the header
 
-1E 00 00 00
-0C 00 00 00
-Mesh 20 Totals
-00
-03 00 00 00
-02 00 00 00
+    1E 00 00 00
+    0C 00 00 00
+    Mesh 20 Totals
+    00
+    03 00 00 00
+    02 00 00 00
 
-==================
 List of properties starts right after the last header.
-==================
 
-1E 10 00 00             -- Marks the begining of the list
-36 00 00 00             -- Number of properties, double check
+    1E 10 00 00             -- Marks the begining of the list
+    36 00 00 00             -- Number of properties, double check
 
-18 00 00 00             -- String length
-3ds Max Version: 18.00  -- Property
-00 00                   -- Null terminator, padded
+    18 00 00 00             -- String length
+    3ds Max Version: 18.00  -- Property
+    00 00                   -- Null terminator, padded
 
-10 00 00 00
-Uncompressed
-00 00 00 00
+    10 00 00 00
+    Uncompressed
+    00 00 00 00
 
-14 00 00 00
-Build: 18.0.873.0
-00 00 00
+    14 00 00 00
+    Build: 18.0.873.0
+    00 00 00
 
-18 00 00 00
-Saved As Version: 18.00
-00
-10 00 00 00
+    18 00 00 00
+    Saved As Version: 18.00
+    00
+    10 00 00 00
 
-Vertices: 507
-00 00 00
-0C 00 00 00
-Faces: 992
+    Vertices: 507
+    00 00 00
+    0C 00 00 00
+    Faces: 992
 
-....
+    ....
 
-14 00 00 00
-RenderElements=0
-00 00 00 00
+    14 00 00 00
+    RenderElements=0
+    00 00 00 00
 
-34 00 00 00  -- idk, maybe just a footer
-03 00 00 00
+    34 00 00 00  -- idk, maybe just a footer
+    03 00 00 00
