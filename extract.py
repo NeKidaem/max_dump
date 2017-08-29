@@ -1,7 +1,7 @@
 import io
+import json
 import sys
 from collections import OrderedDict
-from pprint import pprint
 from struct import unpack, pack
 
 import olefile
@@ -67,9 +67,9 @@ def main():
 
     marker = b'\x1e\x00\x00\x00'
     headers = get_headers(bio, marker)
-    pprint(headers)
     props = read_props(bio, headers)
-    pprint(props)
+    out = json.dumps(props, indent=4)
+    print(out)
 
 
 if __name__ == "__main__":
