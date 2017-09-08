@@ -1,10 +1,13 @@
 # max_dump
 
-Extract file properties from 3ds max file.
+Extract information from a max file.
 
-Example:
+### Examples
 
-    $ python extract.py 02-test_frame_stamp.max
+Extract file properties from 3ds max file:
+
+
+    $ python run.py max_dump/tests/data/01-teapot_no_cams_vray.max
 
     {
         "General": {
@@ -16,84 +19,20 @@ Example:
                 "Saved As Version: 18.00"
             ]
         },
-        "Mesh Totals": {
-            "count": 2,
-            "items": [
-                "Vertices: 507",
-                "Faces: 992"
-            ]
-        },
-        "Scene Totals": {
-            "count": 7,
-            "items": [
-                "Objects: 2",
-                "Shapes: 0",
-                "Lights: 1",
-                "Cameras: 0",
-                "Helpers: 0",
-                "Space Warps: 0",
-                "Total: 3"
-            ]
-        },
-        "External Dependencies": {
-            "count": 1,
-            "items": [
-                "bark5.jpg"
-            ]
-        },
-        "Objects": {
-            "count": 3,
-            "items": [
-                "Sphere001",
-                "VRayLight001",
-                "Plane001"
-            ]
-        },
-        "Materials": {
-            "count": 2,
-            "items": [
-                "Default",
-                "Default2"
-            ]
-        },
-        "Used Plug-Ins": {
-            "count": 20,
-            "items": [
-                "viewportmanager.gup",
-                "mrmaterialattribs.gup",
-                "custattribcontainer.dlo",
-                "mtl.dlt",
-                "vrender2015.dlr",
-                "mtlgen.dlt",
-                "prosound.dlc",
-                "ctrl.dlc",
-                "prim.dlo",
-                "dllights.dlo",
-                "rend.dlr",
-                "kernel.dlk",
-                "acadblocks.dlu",
-                "instancemgr.dlu",
-                "reactor.dlc",
-                "parameditor.gup",
-                "biped.dlc",
-                "sceneeffectloader.dlu",
-                "bitmapproxies.dlu",
-                "storageandfilter.bms"
-            ]
-        },
+
+        ...
+
         "Render Data": {
-            "count": 15,
+            "count": 13,
             "items": [
                 "User Name=JohnDoe",
                 "Computer Name=DESKTOP-KTGFBKA",
-                "Render Width=1024",
-                "Render Height=768",
+                "Render Width=320",
+                "Render Height=240",
                 "Render Aspect=1.00",
                 "Renderer ClassIDA=1941615238",
                 "Renderer ClassIDB=2012806412",
                 "Renderer Name=V-Ray Adv 3.00.08",
-                "Render Output=C:\\Users\\Vadim\\Desktop\\tmp\\2016.png",
-                "Render Output Gamma=2.20",
                 "Animation Start=0",
                 "Animation End=0",
                 "Render Flags=32",
@@ -102,6 +41,52 @@ Example:
             ]
         }
     }
+
+
+Parse chunk-based stream:
+
+
+    $ python run.py max_dump/tests/data/01-teapot_no_cams_vray.max  -s VideoPostQueue
+
+    {
+        "header": null,
+        "childs": [
+            {
+                "header": {
+                    "idn": 80,
+                    "length": 4,
+                    "storage_type": "CStorageValue"
+                },
+                "value": "01 00 00 00"
+            },
+            {
+                "header": {
+                    "idn": 96,
+                    "length": 36,
+                    "storage_type": "CStorageContainer"
+                },
+                "childs": [
+                    {
+                        "header": {
+                            "idn": 16,
+                            "length": 24,
+                            "storage_type": "CStorageValue"
+                        },
+                        "value": "07 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 20 12 00 00 00 00 00 00"
+                    },
+                    {
+                        "header": {
+                            "idn": 32,
+                            "length": 0,
+                            "storage_type": "CStorageValue"
+                        },
+                        "value": ""
+                    }
+                ]
+            }
+        ]
+    }
+
 
 
 # Description

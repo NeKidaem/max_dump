@@ -116,15 +116,19 @@ def read_container(stream, length):
     return childs
 
 
-def extract_vpq(max_fname):
+def storage_parse(max_fname, stream_name):
     ole = olefile.OleFileIO(max_fname)
-    # NOTE: Хранение всего файла в оперативной памяти можно избежать
-    ba = ole.openstream('VideoPostQueue').read()
+    ba = ole.openstream(stream_name).read()
     ole.close()
     stream = io.BytesIO(ba)
     header = None
     nodes = read_container(stream, len(ba))
-    return StorageContainer(header, nodes)
+    c = StorageContainer(header, nodes)
+    return c
+
+
+def extract_vpq(max_fname):
+    return storage_parse(max_fname, 'VideoPostQueue')
 
 
 def main():
