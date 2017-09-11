@@ -1,0 +1,37 @@
+[
+    {
+        "ascii": "....",
+        "header": {
+            "idn": "0x50",
+            "storage_type_name": "VALUE"
+        },
+        "hex_spaced": "01 00 00 00",
+        "parsed": null
+    },
+    {
+        "childs": [
+            {
+                "ascii": "................ .......",
+                "header": {
+                    "idn": "0x10",
+                    "storage_type_name": "VALUE"
+                },
+                "hex_spaced": "07 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 20 12 00 00 00 00 00 00",
+                "parsed": null
+            },
+            {
+                "ascii": "",
+                "header": {
+                    "idn": "0x20",
+                    "storage_type_name": "VALUE"
+                },
+                "hex_spaced": "",
+                "parsed": null
+            }
+        ],
+        "header": {
+            "idn": "0x60",
+            "storage_type_name": "CONTAINER"
+        }
+    }
+]

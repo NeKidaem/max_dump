@@ -3,6 +3,7 @@
 
 import io
 import json
+import string
 import sys
 from enum import IntEnum, unique, auto
 from struct import unpack
@@ -21,6 +22,11 @@ HEADER_LENGTH = INT_S + SHORT_S
 
 DEBUG = False
 #  DEBUG = True
+nest = 0
+def pad():
+    global nest
+    return " " * nest * 2
+
 
 def print(*args, **kwargs):
     if DEBUG:
@@ -32,10 +38,24 @@ class StorageType(IntEnum):
     # Container types 100-199
     CONTAINER = 100
     DLL_ENTRY = auto()
+
+    CONFIG_SCRIPT = auto()
+    CONFIG_SCRIPT_ENTRY = auto()
     # Value types 200-299
     VALUE = 200
     DLL_DESCRIPTION = auto()
     DLL_NAME = auto()
+
+    CLASS_DESCRIPTION = auto()
+    CLASS_HEADER = auto()
+
+    CONFIG_SIZE_HEADER = auto()
+    CONFIG_SCRIPT_ENTRY_HEADER = auto()
+    CONFIG_STRING = auto()
+    CONFIG_FLOAT = auto()
+
+    SCENE_OBJECT_NAME = auto()
+
 
     def is_value(self):
         return self.VALUE <= self
@@ -51,6 +71,23 @@ def utf_16_decode(val):
     return bytes.decode(val, 'utf-16')
 
 
+@attr.s
+class ClassHeader:
+    """
+
+    """
+    dll_index = attr.ib()
+    class_id = attr.ib()
+    super_class_id = attr.ib()
+
+    @classmethod
+    def decode(cls, val):
+        assert len(val) == 16, "Length of a class header string must be 16"
+        dll_index, *class_id, super_class_id = unpack('4i', val)
+        class_id_hex = tuple(reversed(list(map(hex, class_id))))
+        return cls(dll_index, class_id_hex, hex(super_class_id))
+
+
 KNOWN_TYPES = {
     "0x2037": {
         "storage_type": StorageType.DLL_NAME,
@@ -62,6 +99,18 @@ KNOWN_TYPES = {
     },
     "0x2039": {
         "storage_type": StorageType.DLL_DESCRIPTION,
+        "decoder": utf_16_decode,
+    },
+    "0x2042": {
+        "storage_type": StorageType.CLASS_DESCRIPTION,
+        "decoder": utf_16_decode,
+    },
+    "0x2060": {
+        "storage_type": StorageType.CLASS_HEADER,
+        "decoder": ClassHeader.decode
+    },
+    "0x962": {
+        "storage_type": StorageType.SCENE_OBJECT_NAME,
         "decoder": utf_16_decode,
     },
 }
@@ -84,11 +133,28 @@ class StorageValue:
     """
     header = attr.ib()
     value = attr.ib()
+    hex_spaced = attr.ib()
+    utf_16 = attr.ib()
+    ascii = attr.ib()
     parsed = attr.ib()
 
     @property
     def value_bytes(self):
         return bytes.fromhex(self.value)
+
+    @hex_spaced.default
+    def hex_spaced_default(self):
+        return hexdump.dump(self.value_bytes)
+
+    @ascii.default
+    def ascii_default(self):
+        s = self.value_bytes.decode('ascii', 'replace')
+        return ''.join(map(lambda x: x if x in string.printable else '.', s))
+
+    @utf_16.default
+    def utf_16_default(self):
+        s = self.value_bytes.decode('utf-16', 'replace')
+        return s
 
     @parsed.default
     def parsed_default(self):
@@ -116,13 +182,6 @@ class StorageContainer:
 
 class StorageException(Exception):
     pass
-
-
-nest = 0
-
-def pad():
-    global nest
-    return " " * nest * 2
 
 
 def read_idn(stream) -> hex:
@@ -201,7 +260,14 @@ def read_container(stream, length):
             raise Exception(
                 "Unknown header type: {}".format(header.storage_type)
             )
-        childs.append(attr.asdict(child))
+        childs.append(attr.asdict(
+            child,
+            #  filter=lambda a, _: print(a)
+            filter=lambda a, _: a.name in (
+                'idn', 'storage_type_name', 'hex_spaced', 'ascii', 'header',
+                'childs', 'parsed', 'dll_index', 'super_class_id', 'class_id'
+            )
+        ))
         consumed = stream.tell() - start
     nest -= 1
     return childs
@@ -231,7 +297,7 @@ def main():
     max_fname = sys.argv[1]
     container = extract_vpq(max_fname)
     #  print(attr.asdict(container))
-    print(json.dumps(container, indent=4, cls=EnumEncoder, sort_keys=True))
+    print(json.dumps(container, indent=4, sort_keys=True))
 
 
 if __name__ == "__main__":
