@@ -4,10 +4,16 @@ Extract information from a max file.
 
 ### Examples
 
+List cameras
+
+
+    $ python run.py max_dump/tests/data/2017_many_cams_and_other_stuff.max
+
+
 Extract file properties from 3ds max file:
 
 
-    $ python run.py max_dump/tests/data/01-teapot_no_cams_vray.max
+    $ python run.py --props max_dump/tests/data/01-teapot_no_cams_vray.max
 
     {
         "General": {
@@ -46,7 +52,7 @@ Extract file properties from 3ds max file:
 Parse chunk-based stream:
 
 
-    $ python run.py max_dump/tests/data/01-teapot_no_cams_vray.max  -s VideoPostQueue
+    $ python run.py max_dump/tests/data/01-teapot_no_cams_vray.max  --parse-stream VideoPostQueue
 
     {
         "header": null,
