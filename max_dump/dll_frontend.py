@@ -14,4 +14,3 @@ def terse_dll(dll_data):
         brief_data.append(brief_entry)
         idx += 1
     return brief_data
-

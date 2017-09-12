@@ -5,7 +5,7 @@ import io
 import json
 import string
 import sys
-from enum import IntEnum, unique, auto
+from enum import IntEnum, unique
 from struct import unpack
 from pprint import pprint
 
@@ -37,24 +37,24 @@ def print(*args, **kwargs):
 class StorageType(IntEnum):
     # Container types 100-199
     CONTAINER = 100
-    DLL_ENTRY = auto()
+    DLL_ENTRY = 101
 
-    CONFIG_SCRIPT = auto()
-    CONFIG_SCRIPT_ENTRY = auto()
+    CONFIG_SCRIPT = 102
+    CONFIG_SCRIPT_ENTRY = 103
     # Value types 200-299
     VALUE = 200
-    DLL_DESCRIPTION = auto()
-    DLL_NAME = auto()
+    DLL_DESCRIPTION = 201
+    DLL_NAME = 202
 
-    CLASS_DESCRIPTION = auto()
-    CLASS_HEADER = auto()
+    CLASS_DESCRIPTION = 203
+    CLASS_HEADER = 204
 
-    CONFIG_SIZE_HEADER = auto()
-    CONFIG_SCRIPT_ENTRY_HEADER = auto()
-    CONFIG_STRING = auto()
-    CONFIG_FLOAT = auto()
+    CONFIG_SIZE_HEADER = 205
+    CONFIG_SCRIPT_ENTRY_HEADER = 206
+    CONFIG_STRING = 207
+    CONFIG_FLOAT = 208
 
-    SCENE_OBJECT_NAME = auto()
+    SCENE_OBJECT_NAME = 209
 
 
     def is_value(self):
