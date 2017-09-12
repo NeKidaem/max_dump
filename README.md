@@ -2,6 +2,12 @@
 
 Extract information from a max file.
 
+# Installation
+
+
+    $ pip install git+https://github.com/nrdhm/max_dump.git
+
+
 ### Examples
 
 List cameras
