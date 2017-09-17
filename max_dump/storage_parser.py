@@ -3,7 +3,7 @@
 import io
 import os
 from enum import Enum, auto
-from typing import Iterable
+from typing import Iterable, List, Union
 
 import attr
 import olefile
@@ -54,7 +54,13 @@ class StorageContainer(StorageBase):
     Stores other containers.
     """
     childs: Iterable[StorageBase] = attr.ib()
-    count: int = attr.ib()
+
+    @property
+    def count(self):
+        return len(self.childs)
+
+
+ListOfStorages = List[Union[StorageContainer, StorageValue]]
 
 
 @attr.s(slots=True)
@@ -101,18 +107,31 @@ class StorageParser:
             if ole: ole.close()
         return stream
 
-    def _read_container(self, length) -> StorageContainer:
-        """Parse the storage stream in the max container file.
+    def _read_nodes(self, length) -> ListOfStorages:
+        """Read items from the storage stream of the max file.
         """
         self._nest += 1
-        childs = []
-        start = stream.tell()
+        items = []
+        start = self._stream.tell()
         consumed = 0
         while consumed < length:
+            item = None
             header = self._read_header()
+            if header.storage_type == StorageType.CONTAINER:
+                childs = self._read_nodes(header.length)
+                item = StorageContainer(header=header, childs=childs)
+            elif header.storage_type == StorageType.VALUE:
+                value = self._read_value(header.length)
+                item = StorageValue(header=header, value=value)
+            else:
+                raise StorageException(
+                    "Unknown header type: {}".format(header.storage_type)
+                )
+            items.append(item)
+            consumed = self._stream.tell() - start
 
         self._nest -= 1
-        return childs
+        return items
 
     def _read_header(self) -> StorageHeader:
         """Read id, length, type of the chunk.
@@ -149,6 +168,9 @@ class StorageParser:
         header = StorageHeader(idn, chunk_length, storage_type,
                                extended=extended)
         return header
+
+    def _read_value(self, length: int) -> bytes:
+        return self._stream.read(length)
 
     def _nest_pad(self) -> str:
         return " " * self._nest * 2
