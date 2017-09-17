@@ -1,3 +1,4 @@
+# pylint: disable=too-few-public-methods,invalid-name,no-self-use
 """Parse chunk based storage.
 """
 import io
@@ -13,12 +14,15 @@ from . import utils
 
 
 class StorageType(Enum):
+    """Type of a storage.
+    """
     CONTAINER = auto()
     VALUE = auto()
 
 
 class StorageException(Exception):
-    pass
+    """Exception, raised when the storage is malformed or of unknown format.
+    """
 
 
 @attr.s(slots=True)
@@ -56,7 +60,9 @@ class StorageContainer(StorageBase):
     childs: Iterable[StorageBase] = attr.ib()
 
     @property
-    def count(self):
+    def count(self) -> int:
+        """Return a number of childs.
+        """
         return len(self.childs)
 
 
@@ -65,10 +71,14 @@ ListOfStorages = List[Union[StorageContainer, StorageValue]]
 
 @attr.s(slots=True)
 class StorageParser:
+    """Decoder of the chunk-based streams in the max file.
+
+    Represents chunks as a list of Storage-objects.
+    """
     _max_fname: str = attr.ib(convert=os.path.abspath)
 
     @_max_fname.validator
-    def file_exists(self, attribute, value):
+    def _file_exists(self, _, value):
         if not os.path.exists(value):
             raise ValueError("File does not exists: {}".format(value))
 
@@ -95,16 +105,18 @@ class StorageParser:
             ole = olefile.OleFileIO(self._max_fname)
             ba = ole.openstream(stream_name).read()
             stream = io.BytesIO(ba)
-        except OSError as exc:
-            if not ole: raise
+        except OSError:
+            if not ole:
+                raise
             streams = list(zip(*ole.listdir()))[0]
             raise ValueError("Invalid stream name: '{}'. Valid choices are: {}"
                              .format(stream_name, ', '.join(streams))
-                            ) from None
+                             ) from None
         else:
             self._stream = stream
         finally:
-            if ole: ole.close()
+            if ole:
+                ole.close()
         return stream
 
     def _read_nodes(self, length) -> ListOfStorages:
@@ -160,7 +172,8 @@ class StorageParser:
             storage_type = StorageType.VALUE
 
         header_length = SHORT_S + INT_S
-        if extended: header_length += LONG_LONG_S
+        if extended:
+            header_length += LONG_LONG_S
 
         # We need only the length of the value
         chunk_length -= header_length
@@ -176,10 +189,9 @@ class StorageParser:
         return " " * self._nest * 2
 
 
-
-
-
 def main():
+    """Sort of testing function.
+    """
     header = StorageHeader(1, 1, StorageType.CONTAINER)
     print(header)
     header = StorageHeader(1, 1, StorageType.CONTAINER)

@@ -36,8 +36,8 @@ class ReadHeaderTests(unittest.TestCase):
     def test_read_header_value(self):
         # binary header, value
         ba_hex = (
-                '50 00 '  # idn (identifier)
-                '0a 00 00 00'  # length without sign bit (positive)
+            '50 00 '  # idn (identifier)
+            '0a 00 00 00'  # length without sign bit (positive)
         )
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
@@ -51,8 +51,8 @@ class ReadHeaderTests(unittest.TestCase):
     def test_read_header_container(self):
         # binary header, container
         ba_hex = (
-                '50 00 '  # idn (identifier)
-                '0a 00 00 80'  # length with sign bit (negative)
+            '50 00 '  # idn (identifier)
+            '0a 00 00 80'  # length with sign bit (negative)
         )
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
@@ -66,9 +66,9 @@ class ReadHeaderTests(unittest.TestCase):
     def test_read_header_extended_value(self):
         # binary extended header, value
         ba_hex = (
-                '50 00 '  # idn (identifier)
-                '00 00 00 00 '  # zero-length, indicates extended header
-                '12 00 00 00 00 00 00 00'  # 8-byte length
+            '50 00 '  # idn (identifier)
+            '00 00 00 00 '  # zero-length, indicates extended header
+            '12 00 00 00 00 00 00 00'  # 8-byte length
         )
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
@@ -82,9 +82,9 @@ class ReadHeaderTests(unittest.TestCase):
     def test_read_header_extended_container(self):
         # binary extended header, container
         ba_hex = (
-                '50 00 '  # idn (identifier)
-                '00 00 00 00 '  # zero-length, indicates extended header
-                '12 00 00 00 00 00 00 80'  # 8-byte length
+            '50 00 '  # idn (identifier)
+            '00 00 00 00 '  # zero-length, indicates extended header
+            '12 00 00 00 00 00 00 80'  # 8-byte length
         )
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
@@ -102,9 +102,9 @@ class ReadNodesTests(unittest.TestCase):
 
     def test_read_one_simple_node(self):
         ba_hex = (
-                '50 00 '  # idn (identifier)
-                '0a 00 00 00'  # length without sign bit (positive)
-                    '01 00 00 00'  # some value
+            '50 00 '  # idn (identifier)
+            '0a 00 00 00'  # length without sign bit (positive)
+            '01 00 00 00'  # some value
         )
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
@@ -123,19 +123,19 @@ class ReadNodesTests(unittest.TestCase):
         ba_hex = (
             '50 00 '  # idn (identifier)
             '0A 00 00 00 '
-                '01 00 00 00 '
+            '01 00 00 00 '
             '60 00 '
             '2A 00 00 80 '  # length with sign bit, it is container
-                '10 00 '
-                '1E 00 00 00 '
-                    '07 00 00 00 '
-                    '01 00 00 00 '
-                    '00 00 00 00 '
-                    '00 00 00 00 '
-                    '20 12 00 00 '
-                    '00 00 00 00 '
-                '20 00 '
-                '06 00 00 00 '
+            '10 00 '
+            '1E 00 00 00 '
+            '07 00 00 00 '
+            '01 00 00 00 '
+            '00 00 00 00 '
+            '00 00 00 00 '
+            '20 12 00 00 '
+            '00 00 00 00 '
+            '20 00 '
+            '06 00 00 00 '
         )
 
         ba = bytes.fromhex(ba_hex)
