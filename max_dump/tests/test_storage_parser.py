@@ -182,3 +182,29 @@ class ReadNodesTests(unittest.TestCase):
                                                      second_child])
 
         self.assertEqual(nodes, [first_storage, second_storage])
+
+
+class ReadStreamTests(unittest.TestCase):
+    def setUp(self):
+        self.valid_max_fname = BASE_DIR / "./data/2014_many_cams.max"
+
+    def test_read_stream(self):
+        parser = sp.StorageParser(self.valid_max_fname)
+        nodes = parser.parse('VideoPostQueue')
+
+        res_nodes = [
+            sp.StorageValue(
+                header=sp.StorageHeader(
+                    idn=80, length=4, storage_type=sp.StorageType.VALUE,
+                    extended=False
+                ),
+                value=b'\x00\x00\x00\x00'
+            ),
+            sp.StorageValue(
+                header=sp.StorageHeader(
+                    idn=96, length=0, storage_type=sp.StorageType.VALUE,
+                    extended=False),
+                value=b''
+            )
+        ]
+        self.assertEqual(nodes, res_nodes)

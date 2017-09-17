@@ -84,8 +84,8 @@ class StorageParser:
         self._read_stream(stream_name)
         length = self._stream.seek(0, 2)
         self._stream.seek(0, 0)
-        items = self._read_container(length)
-        return items
+        nodes = self._read_nodes(length)
+        return nodes
 
     def _read_stream(self, stream_name: str) -> io.BytesIO:
         """Read the stream and save its contents as a stream of bytes.
