@@ -8,19 +8,18 @@ import pathlib
 import attr
 
 import max_dump
-from max_dump.storage_parser import extract_vpq
+import max_dump.storage_parser as sp
 
 
 BASE_DIR = pathlib.Path(__file__).parent
 
 
-class SimpleTest(unittest.TestCase):
-    def test_extract(self):
-        max_fname = str(BASE_DIR / 'data/01-teapot_no_cams_vray.max')
-        storage = extract_vpq(max_fname)
-        serialized = json.dumps(storage, sort_keys=True, indent=4)
+class StorageParserTest(unittest.TestCase):
+    def test_init(self):
+        with self.assertRaises(FileNotFoundError):
+            sp.StorageParser("invalid_max_fname", "invalid_stream_name")
 
-        res_json = str(BASE_DIR / './data/01-teapot_no_cams_vray_storage_vpq.json')
-        with open(res_json) as fin:
-            serialized_old = fin.read().strip()
-        self.assertEqual(serialized, serialized_old)
+        valid_max_fname = BASE_DIR / "./data/01-teapot_no_cams_vray.max"
+        with self.assertRaises(ValueError):
+            sp.StorageParser(valid_max_fname, "invalid_stream_name")
+
