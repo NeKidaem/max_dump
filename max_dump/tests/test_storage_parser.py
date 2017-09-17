@@ -16,10 +16,11 @@ BASE_DIR = pathlib.Path(__file__).parent
 
 class StorageParserTest(unittest.TestCase):
     def test_init(self):
-        with self.assertRaises(FileNotFoundError):
-            sp.StorageParser("invalid_max_fname", "invalid_stream_name")
+        with self.assertRaises(ValueError):
+            sp.StorageParser("invalid_max_fname")
 
         valid_max_fname = BASE_DIR / "./data/01-teapot_no_cams_vray.max"
+        parser = sp.StorageParser(valid_max_fname)
         with self.assertRaises(ValueError):
-            sp.StorageParser(valid_max_fname, "invalid_stream_name")
+            parser.read_stream("invalid_stream_name")
 

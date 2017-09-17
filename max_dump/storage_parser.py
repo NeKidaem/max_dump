@@ -1,5 +1,6 @@
 """Parse chunk based storage.
 """
+import io
 import os
 import pathlib
 from enum import Enum, auto
@@ -63,22 +64,31 @@ class StorageParser:
     _max_fname: str = attr.ib(convert=os.path.abspath)
 
     @_max_fname.validator
-    def valid_max_file(self, attribute, value):
-        self._ole = olefile.OleFileIO(value)
+    def file_exists(self, attribute, value):
+        if not os.path.exists(value):
+            raise ValueError("File does not exists: {}".format(value))
 
-    _stream_name: str = attr.ib()
+    _stream: io.BytesIO = attr.ib(init=False, default=None)
 
-    @_stream_name.validator
-    def stream_exists(self, attribute, value):
+    def read_stream(self, stream_name):
+        """Read the stream and save its contents as bytes.
+        """
+        ole = None
         try:
-            self._stream = self._ole.openstream(value)
+            ole = olefile.OleFileIO(self._max_fname)
+            ba = ole.openstream(stream_name).read()
+            stream = io.BytesIO(ba)
         except OSError as exc:
-            streams = list(zip(*self._ole.listdir()))[0]
+            if not ole: raise
+            streams = list(zip(*ole.listdir()))[0]
             raise ValueError("Invalid stream name: '{}'. Valid choices are: {}"
-                             .format(value, ', '.join(streams))) from None
-
-    _stream: str = attr.ib(init=False, default=None)
-    _ole: olefile.OleFileIO = attr.ib(init=False, default=None)
+                             .format(stream_name, ', '.join(streams))
+                            ) from None
+        else:
+            self._stream = stream
+        finally:
+            if ole: ole.close()
+        return stream
 
 
 def main():
