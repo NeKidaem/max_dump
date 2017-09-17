@@ -13,6 +13,13 @@ class UtilsTest(unittest.TestCase):
         r = utils.read_short(io.BytesIO(n_bytes))
         self.assertEqual(n, r)
 
+    def test_read_short_negative(self):
+        size = utils.SHORT_S
+        n = -42
+        n_bytes = n.to_bytes(size, 'little', signed=True)
+        r = utils.read_short(io.BytesIO(n_bytes))
+        self.assertEqual(n, r)
+
     def test_read_int(self):
         size = utils.INT_S
         n = 42

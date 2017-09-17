@@ -1,6 +1,9 @@
+# pylint: disable=invalid-name
 """Small functions, objects and constants used by various modules.
 """
+import io
 import logging
+from typing import Dict, Iterable, Hashable, Union, List
 from collections import defaultdict
 from struct import unpack, calcsize
 
@@ -9,28 +12,32 @@ INT_S = calcsize('i')           # 32
 LONG_LONG_S = calcsize('q')     # 64
 
 logging.basicConfig(level=logging.INFO)
-LOGGER = logging.getLogger('max_dump')
+logger = logging.getLogger('max_dump')
+
+DictOfDicts = Dict[Hashable, Dict]
+DictOfList = Dict[Hashable, List]
+DictOrValue = Union[Dict, Hashable]
 
 
-def read_short(stream):
+def read_short(stream: io.BytesIO) -> int:
     """Read signed short integer (usually 16 bit).
     """
     return unpack('h', stream.read(SHORT_S))[0]
 
 
-def read_int(stream):
+def read_int(stream: io.BytesIO) -> int:
     """Read signed integer (usually 32 bit).
     """
     return unpack('i', stream.read(INT_S))[0]
 
 
-def read_long_long(stream):
+def read_long_long(stream: io.BytesIO) -> int:
     """Read signed integer (usually 64 bit).
     """
     return unpack('q', stream.read(LONG_LONG_S))[0]
 
 
-def unset_sign_bit(number, length):
+def unset_sign_bit(number: int, length: int) -> int:
     """Unset sign bit from a `number'.
 
     `length' is the size of the number in bytes.
@@ -48,14 +55,18 @@ def unset_sign_bit(number, length):
     return number
 
 
-def _new_key(entry, key):
-    new_key = entry
+def _new_key(entry: DictOrValue, key: str) -> Hashable:
+    new_key = None
     for sub_key in key.split('__'):
-        new_key = new_key[sub_key]
+        assert isinstance(entry, Dict)
+        new_key = entry[sub_key]
+        entry = entry[sub_key]
+
+    assert isinstance(new_key, Hashable)
     return new_key
 
 
-def index_by(iterable, key):
+def index_by(iterable: Iterable[DictOfDicts], key: str) -> DictOfDicts:
     """Return a dictionary from the given iterable.
 
     `key' may be nested like that: 'header__idn'
@@ -67,10 +78,10 @@ def index_by(iterable, key):
     return indexed
 
 
-def group_by(iterable, key):
+def group_by(iterable: List[DictOfDicts], key: str) -> DictOfList:
     """Group dictinaries in the iterable by key.
     """
-    grouped = defaultdict(list)
+    grouped: DictOfList = defaultdict(list)
     for entry in iterable:
         new_key = _new_key(entry, key)
         grouped[new_key].append(entry)
