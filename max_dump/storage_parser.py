@@ -13,24 +13,14 @@ import attr
 import hexdump
 import olefile
 
-from .utils import INT_S, SHORT_S, read_int
+from .utils import INT_S, SHORT_S, read_int, read_long_long
+from .utils import logger as log
 
 
-# id + length
-HEADER_LENGTH = INT_S + SHORT_S
-
-
-DEBUG = False
-#  DEBUG = True
 nest = 0
 def pad():
     global nest
     return " " * nest * 2
-
-
-def print(*args, **kwargs):
-    if DEBUG:
-        __builtins__['print'](*args, **kwargs)
 
 
 @unique
@@ -190,13 +180,13 @@ def read_idn(stream) -> hex:
     An identifier is an unsigned short integer.
     """
     b = stream.read(SHORT_S)
-    print(pad(), hexdump.dump(b))
+    log.debug(pad(), hexdump.dump(b))
     return hex(unpack('H', b)[0])
 
 
 def read_int(stream):
     b = stream.read(INT_S)
-    print(pad(), hexdump.dump(b))
+    log.debug(pad(), hexdump.dump(b))
     return unpack('i', b)[0]
     #  return unpack('i', stream.read(INT_S))[0]
 
@@ -204,23 +194,31 @@ def read_int(stream):
 def read_header(stream):
     """Return id, length, type of the chunk.
     """
+    length_size_bits = 32
+    length_size = length_size_bits // 8
     idn = read_idn(stream)
     length = read_int(stream)
     if length == 0:
-        raise StorageException(
-                "Extended header length is not yet supported: {}".format(idn)
-        )
-    length -= HEADER_LENGTH
+        # Extended header length is 64 bit long
+        length_size_bits = 64
+        length_size += length_size_bits // 8
+        length = read_long_long(stream)
     # the msb is a flag that helpfully lets us know if the chunk itself
     # contains more chunks, i.e. is a container
-    sign_bit = 1 << 31
+    sign_bit = 1 << (length_size_bits - 1)
     if length & sign_bit:
         storage_type = StorageType.CONTAINER
-        byte_mask = (1 << 32) - 1
+        byte_mask = (1 << length_size_bits) - 1
         # unset sign bit and keep length under int size
         length &= ~sign_bit & byte_mask
     else:
         storage_type = StorageType.VALUE
+
+    log.debug(pad(), "length: {}".format(length))
+    # id + length
+    header_length = SHORT_S + length_size
+    length -= header_length
+
     # Specify type if `idn' is known.
     if idn in KNOWN_TYPES:
         storage_type = KNOWN_TYPES[idn]["storage_type"]
@@ -230,7 +228,7 @@ def read_header(stream):
 def read_value(stream, length):
     val = stream.read(length)
     s = val.hex()
-    print(pad(), s)
+    log.debug(pad(), s)
     return s
 
 
@@ -245,15 +243,15 @@ def read_container(stream, length):
     while consumed < length:
         header = read_header(stream)
         child = None
-        print(pad(), header.storage_type_name)
+        log.debug(pad(), header.storage_type_name)
         if header.storage_type.is_container():
         #  if header.storage_type == StorageType.CONTAINER:
-            print(pad(), "container")
+            log.debug(pad(), "container")
             nodes = read_container(stream, header.length)
             child = StorageContainer(header, nodes)
         #  elif header.storage_type == StorageType.VALUE:
         elif header.storage_type.is_value():
-            print(pad(), "value")
+            log.debug(pad(), "value")
             val = read_value(stream, header.length)
             child = StorageValue(header, val)
         else:
@@ -296,7 +294,6 @@ def extract_vpq(max_fname):
 def main():
     max_fname = sys.argv[1]
     container = extract_vpq(max_fname)
-    #  print(attr.asdict(container))
     print(json.dumps(container, indent=4, sort_keys=True))
 
 

@@ -1,12 +1,21 @@
+import logging
 from collections import defaultdict
 from struct import unpack, calcsize
 
+LONG_LONG_S = calcsize('q')
 INT_S = calcsize('i')
 SHORT_S = calcsize('h')
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('max_dump')
 
-def read_int(bio):
-    return unpack('i', bio.read(INT_S))[0]
+
+def read_int(stream):
+    return unpack('i', stream.read(INT_S))[0]
+
+
+def read_long_long(stream):
+    return unpack('q', stream.read(LONG_LONG_S))[0]
 
 
 def _new_key(entry, key):
