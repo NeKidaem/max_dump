@@ -54,6 +54,10 @@ class StorageBase:
     header: StorageHeader = attr.ib()
     _nest: int = attr.ib(init=False, default=0)
 
+    @property
+    def idn(self):
+        return self.header.idn
+
 
 @attr.s(slots=True, repr=False)
 class StorageValue(StorageBase):
@@ -61,7 +65,8 @@ class StorageValue(StorageBase):
     """
     value: bytes = attr.ib()
 
-    def __repr__(self):
+    @property
+    def _props(self):
         props = []
         hex_s = f"hex: {hexdump.dump(self.value)}"
         props.append(hex_s)
@@ -70,10 +75,16 @@ class StorageValue(StorageBase):
         if len(self.value) == 4:
             int_s, = unpack('i', self.value)
             props.append(f"int: {int_s}")
+        return props
+
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        props = self._props
         body_s = textwrap.indent('\n'.join(props), " " * self._nest + " " * 4)
         ext = ("ext" if self.header.extended else "")
-        format_s = ("[{} StorageValue {} {}]"
-                    .format(hex(self.header.idn), self.header.length, ext))
+        format_s = ("[{} {} {} {}]"
+                    .format(hex(self.header.idn), class_name,
+                    self.header.length, ext))
         format_s = textwrap.indent(format_s, " " * self._nest * 2)
         return '\n'.join([format_s, body_s])
 
@@ -93,10 +104,11 @@ class StorageContainer(StorageBase):
         return len(self.childs)
 
     def __repr__(self):
+        class_name = self.__class__.__name__
         ext = ("ext" if self.header.extended else "")
-        format_s = ("\n[{} StorageContainer {} {} {}]"
-                    .format(hex(self.header.idn), self.header.length,
-                            self.count, ext))
+        format_s = ("\n[{} {} {} {} {}]"
+                    .format(hex(self.header.idn), class_name,
+                            self.header.length, self.count, ext))
         format_s = textwrap.indent(format_s, " " * self._nest * 2)
         childs_s = '\n'.join(repr(c) for c in self.childs)
         return '\n'.join([format_s, childs_s])
