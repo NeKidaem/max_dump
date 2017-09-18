@@ -184,11 +184,11 @@ class ReadNodesTests(unittest.TestCase):
         self.assertEqual(nodes, [first_storage, second_storage])
 
 
-class ReadStreamTests(unittest.TestCase):
+class ParseTests(unittest.TestCase):
     def setUp(self):
         self.valid_max_fname = BASE_DIR / "./data/2014_many_cams.max"
 
-    def test_read_stream(self):
+    def test_parse(self):
         parser = sp.StorageParser(self.valid_max_fname)
         nodes = parser.parse('VideoPostQueue')
 

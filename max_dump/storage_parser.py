@@ -3,10 +3,13 @@
 """
 import io
 import os
+import textwrap
 from enum import Enum, auto
+from struct import unpack
 from typing import Iterable, List, Union
 
 import attr
+import hexdump
 import olefile
 
 from .utils import SHORT_S, INT_S, LONG_LONG_S
@@ -25,7 +28,7 @@ class StorageException(Exception):
     """
 
 
-@attr.s(slots=True)
+@attr.s(slots=True, repr=False)
 class StorageHeader:
     """Storage header.
     """
@@ -36,22 +39,46 @@ class StorageHeader:
     storage_type: StorageType = attr.ib()
     extended: bool = attr.ib(default=False)
 
+    def __repr__(self):
+        s_t = ("CONTAINER" if self.storage_type == StorageType.CONTAINER
+                else "VALUE")
+        ext = ("ext" if self.extended else "")
+        return ("[{} StorageHeader {} {} {}]"
+                .format(hex(self.idn), self.length, s_t, ext))
+
 
 @attr.s(slots=True)
 class StorageBase:
     """Storage base class.
     """
     header: StorageHeader = attr.ib()
+    _nest: int = attr.ib(init=False, default=0)
 
 
-@attr.s(slots=True)
+@attr.s(slots=True, repr=False)
 class StorageValue(StorageBase):
     """Storage value.
     """
     value: bytes = attr.ib()
 
+    def __repr__(self):
+        props = []
+        hex_s = f"hex: {hexdump.dump(self.value)}"
+        props.append(hex_s)
+        ascii_s = f"ascii: {utils.bin2ascii(self.value)}"
+        props.append(ascii_s)
+        if len(self.value) == 4:
+            int_s, = unpack('i', self.value)
+            props.append(f"int: {int_s}")
+        body_s = textwrap.indent('\n'.join(props), " " * self._nest + " " * 4)
+        ext = ("ext" if self.header.extended else "")
+        format_s = ("[{} StorageValue {} {}]"
+                    .format(hex(self.header.idn), self.header.length, ext))
+        format_s = textwrap.indent(format_s, " " * self._nest * 2)
+        return '\n'.join([format_s, body_s])
 
-@attr.s(slots=True)
+
+@attr.s(slots=True, repr=False)
 class StorageContainer(StorageBase):
     """Storage container.
 
@@ -64,6 +91,15 @@ class StorageContainer(StorageBase):
         """Return a number of childs.
         """
         return len(self.childs)
+
+    def __repr__(self):
+        ext = ("ext" if self.header.extended else "")
+        format_s = ("\n[{} StorageContainer {} {} {}]"
+                    .format(hex(self.header.idn), self.header.length,
+                            self.count, ext))
+        format_s = textwrap.indent(format_s, " " * self._nest * 2)
+        childs_s = '\n'.join(repr(c) for c in self.childs)
+        return '\n'.join([format_s, childs_s])
 
 
 ListOfStorages = List[Union[StorageContainer, StorageValue]]
@@ -139,6 +175,7 @@ class StorageParser:
                 raise StorageException(
                     "Unknown header type: {}".format(header.storage_type)
                 )
+            item._nest = self._nest
             items.append(item)
             consumed = self._stream.tell() - start
 

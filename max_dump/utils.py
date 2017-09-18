@@ -3,6 +3,7 @@
 """
 import io
 import logging
+import string
 from typing import Dict, Iterable, Hashable, Union, List
 from collections import defaultdict
 from struct import unpack, calcsize
@@ -86,3 +87,8 @@ def group_by(iterable: List[DictOfDicts], key: str) -> DictOfList:
         new_key = _new_key(entry, key)
         grouped[new_key].append(entry)
     return grouped
+
+
+def bin2ascii(value_bytes):
+    s = value_bytes.decode('ascii', 'replace')
+    return ''.join(map(lambda x: x if x in string.printable else '.', s))
