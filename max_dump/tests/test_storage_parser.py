@@ -1,4 +1,4 @@
-"""Not yet a unittest.
+"""Unit tests for storage_parser.
 """
 import io
 import unittest
@@ -103,8 +103,8 @@ class ReadNodesTests(unittest.TestCase):
     def test_read_one_simple_node(self):
         ba_hex = (
             '50 00 '  # idn (identifier)
-            '0a 00 00 00'  # length without sign bit (positive)
-            '01 00 00 00'  # some value
+            '0a 00 00 00 '  # length without sign bit (positive)
+            '   01 00 00 00 '  # some value
         )
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
@@ -115,7 +115,8 @@ class ReadNodesTests(unittest.TestCase):
                                       storage_type=sp.StorageType.VALUE,
                                       extended=False)
         res_value = bytes.fromhex('01 00 00 00')
-        res_storage = sp.StorageValue(header=res_header, value=res_value)
+        res_storage = sp.StorageValue(header=res_header, value=res_value,
+                                      nest=1)
 
         self.assertEqual(nodes, [res_storage])
 
@@ -123,19 +124,19 @@ class ReadNodesTests(unittest.TestCase):
         ba_hex = (
             '50 00 '  # idn (identifier)
             '0A 00 00 00 '
-            '01 00 00 00 '
+            '   01 00 00 00 '
             '60 00 '
-            '2A 00 00 80 '  # length with sign bit, it is container
-            '10 00 '
-            '1E 00 00 00 '
-            '07 00 00 00 '
-            '01 00 00 00 '
-            '00 00 00 00 '
-            '00 00 00 00 '
-            '20 12 00 00 '
-            '00 00 00 00 '
-            '20 00 '
-            '06 00 00 00 '
+            '2A 00 00 80 '  # length with sign bit, it is a container
+            '   10 00 '
+            '   1E 00 00 00 '
+            '       07 00 00 00 '
+            '       01 00 00 00 '
+            '       00 00 00 00 '
+            '       00 00 00 00 '
+            '       20 12 00 00 '
+            '       00 00 00 00 '
+            '   20 00 '
+            '   06 00 00 00 '
         )
 
         ba = bytes.fromhex(ba_hex)
@@ -147,8 +148,8 @@ class ReadNodesTests(unittest.TestCase):
                                         storage_type=sp.StorageType.VALUE,
                                         extended=False)
         first_value = bytes.fromhex('01 00 00 00')
-        first_storage = sp.StorageValue(header=first_header,
-                                        value=first_value)
+        storage_value = sp.StorageValue(header=first_header,
+                                        value=first_value, nest=1)
 
         container_header = sp.StorageHeader(
             idn=96, length=36, storage_type=sp.StorageType.CONTAINER,
@@ -167,21 +168,23 @@ class ReadNodesTests(unittest.TestCase):
                 '00 00 00 00 '
                 '20 12 00 00 '
                 '00 00 00 00 '
-            )
+            ),
+            nest=2
         )
         second_child = sp.StorageValue(
             header=sp.StorageHeader(
                 idn=32, length=0, storage_type=sp.StorageType.VALUE,
                 extended=False
             ),
-            value=b''
+            value=b'',
+            nest=2
         )
 
-        second_storage = sp.StorageContainer(header=container_header,
-                                             childs=[first_child,
-                                                     second_child])
+        storage_container = sp.StorageContainer(header=container_header,
+                                                childs=[first_child,
+                                                        second_child], nest=1)
 
-        self.assertEqual(nodes, [first_storage, second_storage])
+        self.assertEqual(nodes, [storage_value, storage_container])
 
 
 class ParseTests(unittest.TestCase):
@@ -198,13 +201,15 @@ class ParseTests(unittest.TestCase):
                     idn=80, length=4, storage_type=sp.StorageType.VALUE,
                     extended=False
                 ),
-                value=b'\x00\x00\x00\x00'
+                value=b'\x00\x00\x00\x00',
+                nest=1
             ),
             sp.StorageValue(
                 header=sp.StorageHeader(
                     idn=96, length=0, storage_type=sp.StorageType.VALUE,
                     extended=False),
-                value=b''
+                value=b'',
+                nest=1
             )
         ]
         self.assertEqual(nodes, res_nodes)

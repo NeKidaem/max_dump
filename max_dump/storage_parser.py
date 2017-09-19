@@ -52,7 +52,7 @@ class StorageBase:
     """Storage base class.
     """
     header: StorageHeader = attr.ib()
-    _nest: int = attr.ib(init=False, default=0)
+    _nest: int = attr.ib(default=0)
 
     @property
     def idn(self):
@@ -63,13 +63,13 @@ class StorageBase:
 class StorageValue(StorageBase):
     """Storage value.
     """
-    value: bytes = attr.ib()
+    value: bytes = attr.ib(default=None)
 
     @property
     def _props(self):
         props = []
         hex_s = f"hex: {hexdump.dump(self.value)}"
-        props.append(textwrap.shorten(hex_s, 35))
+        props.append(textwrap.shorten(hex_s, 80))
         ascii_s = f"ascii: {utils.bin2ascii(self.value)}"
         props.append(ascii_s)
         if len(self.value) == 4:
@@ -82,9 +82,12 @@ class StorageValue(StorageBase):
         props = self._props
         body_s = textwrap.indent('\n'.join(props), " " * self._nest + " " * 4)
         ext = ("ext" if self.header.extended else "")
-        format_s = ("[{} {} {} {}]"
-                    .format(hex(self.header.idn), class_name,
-                    self.header.length, ext))
+        format_s = ("[{idn} {name} {len} <{nest}> {ext}]"
+                    .format(idn=hex(self.header.idn),
+                            name=class_name,
+                            len=self.header.length,
+                            nest=self._nest,
+                            ext=ext))
         format_s = textwrap.indent(format_s, " " * self._nest * 2)
         return '\n'.join([format_s, body_s])
 
@@ -95,7 +98,7 @@ class StorageContainer(StorageBase):
 
     Stores other containers.
     """
-    childs: Iterable[StorageBase] = attr.ib()
+    childs: Iterable[StorageBase] = attr.ib(default=attr.Factory(list))
 
     @property
     def count(self) -> int:
@@ -106,9 +109,13 @@ class StorageContainer(StorageBase):
     def __repr__(self):
         class_name = self.__class__.__name__
         ext = ("ext" if self.header.extended else "")
-        format_s = ("\n[{} {} {} {} {}]"
-                    .format(hex(self.header.idn), class_name,
-                            self.header.length, self.count, ext))
+        format_s = ("\n[{idn} {name} {len} {count} <{nest}> {ext}]"
+                    .format(idn=hex(self.header.idn),
+                            name=class_name,
+                            len=self.header.length,
+                            count=self.count,
+                            nest=self._nest,
+                            ext=ext))
         format_s = textwrap.indent(format_s, " " * self._nest * 2)
         childs_s = '\n'.join(repr(c) for c in self.childs)
         return '\n'.join([format_s, childs_s])
