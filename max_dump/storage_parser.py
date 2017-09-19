@@ -69,7 +69,7 @@ class StorageValue(StorageBase):
     def _props(self):
         props = []
         hex_s = f"hex: {hexdump.dump(self.value)}"
-        props.append(hex_s)
+        props.append(textwrap.shorten(hex_s, 35))
         ascii_s = f"ascii: {utils.bin2ascii(self.value)}"
         props.append(ascii_s)
         if len(self.value) == 4:

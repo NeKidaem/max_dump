@@ -16,6 +16,7 @@ class DllDirectoryType(Enum):
     DLL_DESCRIPTION = 2
 
 
+@attr.s(slots=True, repr=False)
 class DllEntry(StorageContainer):
     def __repr__(self):
         class_name = self.__class__.__name__
@@ -28,29 +29,22 @@ class DllEntry(StorageContainer):
         return '\n'.join([format_s, childs_s])
 
     @classmethod
-    def decode(cls, container):
+    def _decode(cls, container):
         new_childs = []
-        for child in container.childs:
-            if child.idn == int('0x2037', 16):
-                new_child = DllName.decode(child)
-            elif child.idn == int('0x2039', 16):
-                new_child = DllDescription.decode(child)
-            elif child.idn == int('0x2038', 16):
-                new_child = DllEntry.decode(child)
-            else:
-                raise StorageException("Unknown storage id: {}"
-                                       .format(child.idn))
-            new_childs.append(new_child)
         inst = cls(header=container.header, childs=new_childs)
+        inst._nest = container._nest
         return inst
 
 
-class DllName(StorageValue):
+class DllNodeDecodeMixin:
     @classmethod
-    def decode(cls, storage_value):
+    def _decode(cls, storage_value):
         inst = cls(header=storage_value.header, value=storage_value.value)
+        inst._nest = storage_value._nest
         return inst
 
+
+class DllNodePropsMixin:
     @property
     def _props(self):
         props = []
@@ -59,28 +53,20 @@ class DllName(StorageValue):
         return props
 
 
-class DllDescription(StorageValue):
-    @classmethod
-    def decode(cls, storage_value):
-        inst = cls(header=storage_value.header, value=storage_value.value)
-        return inst
+class DllName(DllNodePropsMixin, StorageValue, DllNodeDecodeMixin):
+    """Name of the dll.
+    """
 
-    @property
-    def _props(self):
-        props = []
-        utf_16 = f"utf-16: {self.value.decode('utf-16')}"
-        props.append(utf_16)
-        return props
+class DllDescription(DllNodePropsMixin, StorageValue, DllNodeDecodeMixin):
+    """Description of the dll.
+    """
 
 
-class DllHeader(StorageValue):
-    @classmethod
-    def decode(cls, storage_value):
-        inst = cls(header=storage_value.header, value=storage_value.value)
-        return inst
+class DllHeader(StorageValue, DllNodeDecodeMixin):
+    """Header of the DllDirectory stream.
+    """
 
 
-@attr.s(slots=True)
 class DllDecoder:
     idn2class_map = {
         '0x2037': DllName,
@@ -88,15 +74,26 @@ class DllDecoder:
         '0x2039': DllDescription,
         '0x21c0': DllHeader,
     }
+    CONTAINERS = {'0x2038'}
+    NODES = {'0x2037', '0x2039', '0x21c0'}
+
     @classmethod
     def decode(cls, nodes):
-        new_nodes = []
-        for node in nodes:
-            idn = hex(node.idn)
-            if idn not in cls.idn2class_map:
-                raise StorageException("Unknown storage id: {:x}"
-                        .format(node.idn))
-            klass = cls.idn2class_map[hex(node.idn)]
-            new_node = klass.decode(node)
-            new_nodes.append(new_node)
-        return new_nodes
+        return cls._decode_many(nodes)
+
+    @classmethod
+    def _decode_one(cls, node):
+        idn = hex(node.idn)
+        klass = cls.idn2class_map[idn]
+        decoded_node = klass._decode(node)
+
+        if idn in cls.CONTAINERS:
+            decoded_node.childs = cls._decode_many(node.childs)
+
+        if idn not in cls.idn2class_map:
+            raise StorageException("Unknown storage id: {:x}".format(node.idn))
+        return decoded_node
+
+    @classmethod
+    def _decode_many(cls, nodes):
+        return [cls._decode_one(node) for node in nodes]
