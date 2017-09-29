@@ -3,6 +3,7 @@
 """
 import io
 import logging
+import operator
 import string
 from typing import Dict, Iterable, Hashable, Union, List
 from collections import defaultdict
@@ -92,3 +93,19 @@ def group_by(iterable: List[DictOfDicts], key: str) -> DictOfList:
 def bin2ascii(value_bytes):
     s = value_bytes.decode('ascii', 'replace')
     return ''.join(map(lambda x: x if x in string.printable else '.', s))
+
+
+class CommonEqualityMixin:
+
+    __slots__ = ()
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            if self.__slots__ == other.__slots__:
+                 attr_getters = [operator.attrgetter(attr) for attr in self.__slots__]
+                 return all(getter(self) == getter(other) for getter in attr_getters)
+
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

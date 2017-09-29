@@ -3,7 +3,6 @@
 import textwrap
 from enum import Enum
 
-import attr
 import hexdump
 
 from .storage_parser import (StorageContainer, StorageValue, StorageException,
@@ -16,7 +15,6 @@ class DllDirectoryType(Enum):
     DLL_DESCRIPTION = 2
 
 
-@attr.s(slots=True, repr=False)
 class DllEntry(StorageContainer):
     def __repr__(self):
         class_name = self.__class__.__name__
@@ -84,14 +82,15 @@ class DllDecoder:
     @classmethod
     def _decode_one(cls, node):
         idn = hex(node.idn)
+        if idn not in cls.idn2class_map:
+            raise StorageException("Unknown storage id: {:x}".format(node.idn))
+
         klass = cls.idn2class_map[idn]
         decoded_node = klass._decode(node)
 
         if idn in cls.CONTAINERS:
             decoded_node.childs = cls._decode_many(node.childs)
 
-        if idn not in cls.idn2class_map:
-            raise StorageException("Unknown storage id: {:x}".format(node.idn))
         return decoded_node
 
     @classmethod

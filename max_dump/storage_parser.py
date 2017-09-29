@@ -8,12 +8,14 @@ from enum import Enum, auto
 from struct import unpack
 from typing import Iterable, List, Union
 
-import attr
 import hexdump
 import olefile
 
 from .utils import SHORT_S, INT_S, LONG_LONG_S
 from . import utils
+
+
+Storage = Union['StorageContainer', 'StorageValue']
 
 
 class StorageType(Enum):
@@ -28,42 +30,63 @@ class StorageException(Exception):
     """
 
 
-@attr.s(slots=True, repr=False)
-class StorageHeader:
+class StorageHeader(utils.CommonEqualityMixin):
     """Storage header.
     """
-    # identifier (unsigned short integer)
-    idn: int = attr.ib()
-    # Length of the value only, no header
-    length: int = attr.ib()
-    storage_type: StorageType = attr.ib()
-    extended: bool = attr.ib(default=False)
+    __slots__ = ("idn", "length", "storage_type", "extended")
+
+    def __init__(
+            self,
+            idn: int,
+            length: int,
+            storage_type: StorageType,
+            extended: bool = False
+    ) -> None:
+        # identifier (unsigned short integer)
+        self.idn = idn
+        # Length of the value only, no header
+        self.length = length
+        self.storage_type = storage_type
+        self.extended = extended
 
     def __repr__(self):
         s_t = ("CONTAINER" if self.storage_type == StorageType.CONTAINER
-                else "VALUE")
+               else "VALUE")
         ext = ("ext" if self.extended else "")
         return ("[{} StorageHeader {} {} {}]"
                 .format(hex(self.idn), self.length, s_t, ext))
 
 
-@attr.s(slots=True)
-class StorageBase:
+class StorageBase(utils.CommonEqualityMixin):
     """Storage base class.
     """
-    header: StorageHeader = attr.ib()
-    _nest: int = attr.ib(default=0)
+
+    def __init__(
+            self,
+            header: StorageHeader = None,
+            nest: int = 0
+    ) -> None:
+        self.header = header
+        self._nest = nest
 
     @property
     def idn(self):
         return self.header.idn
 
 
-@attr.s(slots=True, repr=False)
 class StorageValue(StorageBase):
     """Storage value.
     """
-    value: bytes = attr.ib(default=None)
+    __slots__ = ("value", )
+
+    def __init__(
+            self,
+            header: StorageHeader,
+            nest: int = 0,
+            value: bytes = None
+    ) -> None:
+        super().__init__(header, nest)
+        self.value = value
 
     @property
     def _props(self):
@@ -92,18 +115,30 @@ class StorageValue(StorageBase):
         return '\n'.join([format_s, body_s])
 
 
-@attr.s(slots=True, repr=False)
 class StorageContainer(StorageBase):
     """Storage container.
 
     Stores other containers.
     """
-    childs: Iterable[StorageBase] = attr.ib(default=attr.Factory(list))
+    __slots__ = ("childs", )
+
+    def __init__(
+            self,
+            header: StorageHeader = None,
+            nest: int = 0,
+            childs: Iterable[StorageBase] = None
+    ) -> None:
+        super().__init__(header, nest)
+        if childs is None:
+            childs = []
+        self.childs = childs
 
     @property
     def count(self) -> int:
         """Return a number of childs.
         """
+        if self.childs is None:
+            return 0
         return len(self.childs)
 
     def __repr__(self):
@@ -121,30 +156,29 @@ class StorageContainer(StorageBase):
         return '\n'.join([format_s, childs_s])
 
 
-ListOfStorages = List[Union[StorageContainer, StorageValue]]
-
-
-@attr.s(slots=True)
 class StorageParser:
     """Decoder of the chunk-based streams in the max file.
 
     Represents chunks as a list of Storage-objects.
     """
-    _max_fname: str = attr.ib(convert=os.path.abspath)
+    __slots__ = ("_max_fname", "_stream", "_nest")
 
-    @_max_fname.validator
-    def _file_exists(self, _, value):
-        if not os.path.exists(value):
-            raise ValueError("File does not exists: {}".format(value))
+    def __init__(
+            self,
+            max_fname: str = None,
+    ) -> None:
+        max_fname = os.path.abspath(max_fname)
+        if not os.path.exists(max_fname):
+            raise ValueError("File does not exists: {}".format(max_fname))
+        self._max_fname = max_fname
 
-    _stream: io.BytesIO = attr.ib(init=False, default=None)
+        self._stream: io.BytesIO = None
+        self._nest: int = 0
 
-    _nest: int = attr.ib(init=False, default=0)
-
-    def parse(self, stream_name: str) -> Iterable[StorageContainer]:
+    def parse(self, stream_name: str) -> List[Storage]:
         """Parse a chunk-based stream from the max file.
 
-        Interpret bytes from _stream as StorageContainer with childs.
+        Interpret bytes from _stream as list of storages.
         """
         self._read_stream(stream_name)
         length = self._stream.seek(0, 2)
@@ -174,28 +208,30 @@ class StorageParser:
                 ole.close()
         return stream
 
-    def _read_nodes(self, length) -> ListOfStorages:
+    def _read_nodes(self, length) -> List[Storage]:
         """Read items from the storage stream of the max file.
         """
+        assert self._stream is not None, "Call _read_stream before"
         self._nest += 1
-        items = []
+        items: List[Storage] = []
         start = self._stream.tell()
         consumed = 0
         while consumed < length:
-            item = None
             header = self._read_header()
             if header.storage_type == StorageType.CONTAINER:
                 childs = self._read_nodes(header.length)
-                item = StorageContainer(header=header, childs=childs)
+                st_cont = StorageContainer(header=header, childs=childs)
+                st_cont._nest = self._nest
+                items.append(st_cont)
             elif header.storage_type == StorageType.VALUE:
                 value = self._read_value(header.length)
-                item = StorageValue(header=header, value=value)
+                st_value = StorageValue(header=header, value=value)
+                st_value._nest = self._nest
+                items.append(st_value)
             else:
                 raise StorageException(
                     "Unknown header type: {}".format(header.storage_type)
                 )
-            item._nest = self._nest
-            items.append(item)
             consumed = self._stream.tell() - start
 
         self._nest -= 1
