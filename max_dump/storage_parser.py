@@ -101,7 +101,7 @@ class StorageBase(utils.CommonEqualityMixin):
 
     def __init__(
             self,
-            header: StorageHeader = None,
+            header: StorageHeader,
             nest: int = 0
     ) -> None:
         self.header = header
@@ -133,13 +133,14 @@ class StorageValue(StorageBase):
     @property
     def _props(self):
         props = []
-        hex_s = f"hex: {hexdump.dump(self.value)}"
-        props.append(textwrap.shorten(hex_s, 80))
-        ascii_s = f"ascii: {utils.bin2ascii(self.value)}"
-        props.append(ascii_s)
-        if len(self.value) == 4:
-            int_s, = unpack('i', self.value)
-            props.append(f"int: {int_s}")
+        if self.value:
+            hex_s = f"hex: {hexdump.dump(self.value)}"
+            props.append(textwrap.shorten(hex_s, 80))
+            ascii_s = f"ascii: {utils.bin2ascii(self.value)}"
+            props.append(ascii_s)
+            if len(self.value) == 4:
+                int_s, = unpack('i', self.value)
+                props.append(f"int: {int_s}")
         return props
 
     def __repr__(self):
@@ -166,7 +167,7 @@ class StorageContainer(StorageBase):
 
     def __init__(
             self,
-            header: StorageHeader = None,
+            header: StorageHeader,
             nest: int = 0,
             childs: Iterable[StorageBase] = None
     ) -> None:
