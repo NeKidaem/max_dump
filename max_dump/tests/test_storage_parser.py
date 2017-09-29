@@ -2,6 +2,7 @@
 """
 import io
 import unittest
+import olefile
 import pathlib
 
 import max_dump.storage_parser as sp
@@ -105,7 +106,7 @@ class ReadNodesTests(unittest.TestCase):
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
         parser._stream = io.BytesIO(ba)
-        nodes = parser._read_nodes(len(ba))
+        nodes = parser.read_storages(len(ba))
 
         res_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.VALUE,
@@ -138,7 +139,7 @@ class ReadNodesTests(unittest.TestCase):
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
         parser._stream = io.BytesIO(ba)
-        nodes = parser._read_nodes(len(ba))
+        nodes = parser.read_storages(len(ba))
 
         first_header = sp.StorageHeader(idn=80, length=4,
                                         storage_type=sp.StorageType.VALUE,
@@ -187,9 +188,41 @@ class ParseTests(unittest.TestCase):
     def setUp(self):
         self.valid_max_fname = BASE_DIR / "./data/2014_many_cams.max"
 
-    def test_parse(self):
+    def test_parse_stream(self):
         parser = sp.StorageParser(self.valid_max_fname)
-        nodes = parser.parse('VideoPostQueue')
+        nodes = parser.parse_stream('VideoPostQueue')
+
+        res_nodes = [
+            sp.StorageValue(
+                header=sp.StorageHeader(
+                    idn=80, length=4, storage_type=sp.StorageType.VALUE,
+                    extended=False
+                ),
+                value=b'\x00\x00\x00\x00',
+                nest=1
+            ),
+            sp.StorageValue(
+                header=sp.StorageHeader(
+                    idn=96, length=0, storage_type=sp.StorageType.VALUE,
+                    extended=False),
+                value=b'',
+                nest=1
+            )
+        ]
+        self.assertEqual(nodes, res_nodes)
+
+    def test_read_stream_not_in_mem(self):
+        parser = sp.StorageParser(self.valid_max_fname)
+        try:
+            stream = parser._read_stream('VideoPostQueue', in_mem=False)
+            self.assertIsInstance(parser._ole, olefile.OleFileIO)
+        finally:
+            if parser._ole:
+                parser._ole.close()
+
+    def test_parse_stream_not_in_mem(self):
+        parser = sp.StorageParser(self.valid_max_fname)
+        nodes = parser.parse_stream('VideoPostQueue', in_mem=False)
 
         res_nodes = [
             sp.StorageValue(

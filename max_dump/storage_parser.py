@@ -203,7 +203,7 @@ class StorageParser:
 
     Represents chunks as a list of Storage-objects.
     """
-    __slots__ = ("_max_fname", "_stream", "_nest", "_debug")
+    __slots__ = ("_max_fname", "_stream", "_nest", "_debug", "_ole")
 
     def __init__(
             self,
@@ -217,26 +217,44 @@ class StorageParser:
         self._stream: io.BytesIO = None
         self._nest: int = 0
         self._debug: bool = False
+        self._ole: olefile.OleFileIO = None
 
-    def parse(self, stream_name: str) -> List[Storage]:
+    def parse_stream(
+            self,
+            stream_name: str,
+            in_mem: bool = True
+    ) -> List[Storage]:
         """Parse a chunk-based stream from the max file.
 
         Interpret bytes from _stream as list of storages.
         """
-        self._read_stream(stream_name)
-        length = self._stream.seek(0, 2)
-        self._stream.seek(0, 0)
-        nodes = self._read_nodes(length)
-        return nodes
+        try:
+            self._read_stream(stream_name, in_mem)
+            length = self._stream.seek(0, 2)
+            self._stream.seek(0, 0)
+            nodes = self.read_storages(length)
+            return nodes
+        finally:
+            if self._ole:
+                self._ole.close()
 
-    def _read_stream(self, stream_name: str) -> io.BytesIO:
+    def _read_stream(
+            self,
+            stream_name: str,
+            in_mem: bool = True
+    ) -> io.BytesIO:
         """Read the stream and save its contents as a stream of bytes.
         """
         ole = None
         try:
             ole = olefile.OleFileIO(self._max_fname)
-            ba = ole.openstream(stream_name).read()
-            stream = io.BytesIO(ba)
+            stream = None
+            if in_mem:
+                ba = ole.openstream(stream_name).read()
+                stream = io.BytesIO(ba)
+            else:
+                self._ole = ole
+                stream = ole.openstream(stream_name)
         except OSError:
             if not ole:
                 raise
@@ -247,51 +265,51 @@ class StorageParser:
         else:
             self._stream = stream
         finally:
-            if ole:
+            if ole and in_mem:
                 ole.close()
         return stream
 
-    def _read_nodes(self, length) -> List[Storage]:
-        """Read items from the storage stream of the max file.
+    def read_storages(self, length: int) -> List[Storage]:
+        """Read items from the storage stream.
         """
-        assert self._stream is not None, "Call _read_stream before"
+        assert self._stream is not None, "Call _read_stream yourself"
         self._nest += 1
         items: List[Storage] = []
         start = self._stream.tell()
         consumed = 0
         while consumed < length:
-            storage_start = self._stream.tell()
             header = StorageHeader.from_bytes(self._stream)
-            if header.storage_type == StorageType.CONTAINER:
-                childs = self._read_nodes(header.length)
-                st_cont = StorageContainer(header=header, childs=childs)
-                st_cont._nest = self._nest
-                if self._debug:
-                    storage_end = self._stream.tell()
-                    self._stream.seek(storage_start)
-                    raw = self._stream.read(storage_end - storage_start)
-                    st_cont._raw = raw
-                    self._stream.seek(storage_end)
-                items.append(st_cont)
-            elif header.storage_type == StorageType.VALUE:
-                value = self._read_value(header.length)
-                st_value = StorageValue(header=header, value=value)
-                st_value._nest = self._nest
-                if self._debug:
-                    storage_end = self._stream.tell()
-                    self._stream.seek(storage_start)
-                    raw = self._stream.read(storage_end - storage_start)
-                    st_value._raw = raw
-                    self._stream.seek(storage_end)
-                items.append(st_value)
-            else:
-                raise StorageException(
-                    "Unknown header type: {}".format(header.storage_type)
-                )
+            storage = self._read_one_storage(header)
+            items.append(storage)
+
             consumed = self._stream.tell() - start
 
         self._nest -= 1
         return items
+
+    def _read_one_storage(self, header: StorageHeader) -> Storage:
+        assert self._stream is not None, "Call _read_stream yourself"
+        if self._debug:
+            storage_start = self._stream.tell()
+        storage: Storage = None
+        if header.storage_type == StorageType.CONTAINER:
+            childs = self.read_storages(header.length)
+            storage = StorageContainer(header=header, childs=childs)
+        elif header.storage_type == StorageType.VALUE:
+            value = self._read_value(header.length)
+            storage = StorageValue(header=header, value=value)
+        else:
+            raise StorageException(
+                "Unknown header type: {}".format(header.storage_type)
+            )
+        storage._nest = self._nest
+        if self._debug:
+            storage_end = self._stream.tell()
+            self._stream.seek(storage_start)
+            raw = self._stream.read(storage_end - storage_start)
+            storage._raw = raw
+            self._stream.seek(storage_end)
+        return storage
 
     def _read_value(self, length: int) -> bytes:
         return self._stream.read(length)
