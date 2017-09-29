@@ -5,6 +5,7 @@ import io
 import logging
 import operator
 import string
+from itertools import chain
 from typing import Dict, Iterable, Hashable, Union, List
 from collections import defaultdict
 from struct import unpack, calcsize
@@ -95,14 +96,23 @@ def bin2ascii(value_bytes):
     return ''.join(map(lambda x: x if x in string.printable else '.', s))
 
 
+def slots(klass: type) -> Iterable:
+    """Collect all slots from `klass' and its parents.
+    """
+    return chain.from_iterable(getattr(cls, '__slots__', [])
+                               for cls in klass.__mro__)
+
+
 class CommonEqualityMixin:
 
     __slots__ = ()
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            if self.__slots__ == other.__slots__:
-                 attr_getters = [operator.attrgetter(attr) for attr in self.__slots__]
+            my_slots = list(slots(self.__class__))
+            other_slots = list(slots(other.__class__))
+            if my_slots == other_slots:
+                 attr_getters = [operator.attrgetter(attr) for attr in my_slots]
                  return all(getter(self) == getter(other) for getter in attr_getters)
 
         return False

@@ -31,9 +31,6 @@ class InitTests(unittest.TestCase):
 
 
 class ReadHeaderTests(unittest.TestCase):
-    def setUp(self):
-        self.valid_max_fname = BASE_DIR / "./data/01-teapot_no_cams_vray.max"
-
     def test_read_header_value(self):
         # binary header, value
         ba_hex = (
@@ -106,16 +103,17 @@ class ReadNodesTests(unittest.TestCase):
         ba = bytes.fromhex(ba_hex)
         parser = sp.StorageParser(self.valid_max_fname)
         parser._stream = io.BytesIO(ba)
-        nodes = parser.read_storages(len(ba))
+        header = sp.StorageHeader.from_bytes(parser._stream)
+        node = parser._read_one_storage(header)
 
         res_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.VALUE,
                                       extended=False)
         res_value = bytes.fromhex('01 00 00 00')
         res_storage = sp.StorageValue(header=res_header, value=res_value,
-                                      nest=1)
+                                      nest=0)
 
-        self.assertEqual(nodes, [res_storage])
+        self.assertEqual(node, res_storage)
 
     def test_read_few_simple_nodes(self):
         ba_hex = (
