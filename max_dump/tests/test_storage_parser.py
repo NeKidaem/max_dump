@@ -6,6 +6,7 @@ import olefile
 import pathlib
 
 import max_dump.storage_parser as sp
+from . import utils
 
 
 BASE_DIR = pathlib.Path(__file__).parent
@@ -100,11 +101,8 @@ class ReadNodesTests(unittest.TestCase):
             '0a 00 00 00 '  # length without sign bit (positive)
             '   01 00 00 00 '  # some value
         )
-        ba = bytes.fromhex(ba_hex)
-        parser = sp.StorageParser(self.valid_max_fname)
-        parser._stream = io.BytesIO(ba)
-        header = sp.StorageHeader.from_bytes(parser._stream)
-        node = parser._read_one_storage(header)
+
+        node = utils.one_storage_from_ba_hex(ba_hex, self.valid_max_fname)
 
         res_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.VALUE,
@@ -134,10 +132,7 @@ class ReadNodesTests(unittest.TestCase):
             '   06 00 00 00 '
         )
 
-        ba = bytes.fromhex(ba_hex)
-        parser = sp.StorageParser(self.valid_max_fname)
-        parser._stream = io.BytesIO(ba)
-        nodes = parser.read_storages(len(ba))
+        nodes = utils.all_storages_from_ba_hex(ba_hex, self.valid_max_fname)
 
         first_header = sp.StorageHeader(idn=80, length=4,
                                         storage_type=sp.StorageType.VALUE,

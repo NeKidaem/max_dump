@@ -278,8 +278,7 @@ class StorageParser:
         start = self._stream.tell()
         consumed = 0
         while consumed < length:
-            header = StorageHeader.from_bytes(self._stream)
-            storage = self._read_one_storage(header)
+            storage = self._read_one_storage()
             items.append(storage)
 
             consumed = self._stream.tell() - start
@@ -287,10 +286,11 @@ class StorageParser:
         self._nest -= 1
         return items
 
-    def _read_one_storage(self, header: StorageHeader) -> Storage:
+    def _read_one_storage(self) -> Storage:
         assert self._stream is not None, "Call _read_stream yourself"
         if self._debug:
             storage_start = self._stream.tell()
+        header = StorageHeader.from_bytes(self._stream)
         storage: Storage = None
         if header.storage_type == StorageType.CONTAINER:
             childs = self.read_storages(header.length)

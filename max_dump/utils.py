@@ -10,6 +10,7 @@ from typing import Dict, Iterable, Hashable, Union, List
 from collections import defaultdict
 from struct import unpack, calcsize
 
+
 SHORT_S = calcsize('h')         # 16
 INT_S = calcsize('i')           # 32
 LONG_LONG_S = calcsize('q')     # 64
