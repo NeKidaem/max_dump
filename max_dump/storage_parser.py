@@ -56,10 +56,48 @@ class StorageHeader(utils.CommonEqualityMixin):
         return ("[{} StorageHeader {} {} {}]"
                 .format(hex(self.idn), self.length, s_t, ext))
 
+    @classmethod
+    def from_bytes(cls, ba_stream: io.BytesIO) -> 'StorageHeader':
+        """Read id, length, type of the chunk.
+        """
+        # Number of bytes denoting length of the chunk.
+        size_of_length = INT_S
+        # Identifier of a chunk.
+        idn = utils.read_short(ba_stream)
+        chunk_length = utils.read_int(ba_stream)
+        extended = False
+
+        if chunk_length == 0:
+            # It is an extended header and needs extra 64 bits.
+            extended = True
+            size_of_length = LONG_LONG_S
+            chunk_length = utils.read_long_long(ba_stream)
+            assert chunk_length != 0, "Extended length cannot be zero"
+
+        storage_type = None
+        # if sign bit is set (length is negative), then the chunk itself
+        # contains more chunks, i.e. is a container
+        if chunk_length < 0:
+            storage_type = StorageType.CONTAINER
+            chunk_length = utils.unset_sign_bit(chunk_length, size_of_length)
+        else:
+            storage_type = StorageType.VALUE
+
+        header_length = SHORT_S + INT_S
+        if extended:
+            header_length += LONG_LONG_S
+
+        # We need only the length of the value
+        chunk_length -= header_length
+
+        header = cls(idn, chunk_length, storage_type, extended=extended)
+        return header
+
 
 class StorageBase(utils.CommonEqualityMixin):
     """Storage base class.
     """
+    __slots__ = ("header", "_nest", "_raw")
 
     def __init__(
             self,
@@ -68,6 +106,7 @@ class StorageBase(utils.CommonEqualityMixin):
     ) -> None:
         self.header = header
         self._nest = nest
+        self._raw: bytes = None
 
     @property
     def idn(self):
@@ -87,6 +126,9 @@ class StorageValue(StorageBase):
     ) -> None:
         super().__init__(header, nest)
         self.value = value
+
+    #  @classmethod
+    #  def from_bytes(cls, bytes: io.BytesIO):
 
     @property
     def _props(self):
@@ -161,7 +203,7 @@ class StorageParser:
 
     Represents chunks as a list of Storage-objects.
     """
-    __slots__ = ("_max_fname", "_stream", "_nest")
+    __slots__ = ("_max_fname", "_stream", "_nest", "_debug")
 
     def __init__(
             self,
@@ -174,6 +216,7 @@ class StorageParser:
 
         self._stream: io.BytesIO = None
         self._nest: int = 0
+        self._debug: bool = False
 
     def parse(self, stream_name: str) -> List[Storage]:
         """Parse a chunk-based stream from the max file.
@@ -217,16 +260,29 @@ class StorageParser:
         start = self._stream.tell()
         consumed = 0
         while consumed < length:
-            header = self._read_header()
+            storage_start = self._stream.tell()
+            header = StorageHeader.from_bytes(self._stream)
             if header.storage_type == StorageType.CONTAINER:
                 childs = self._read_nodes(header.length)
                 st_cont = StorageContainer(header=header, childs=childs)
                 st_cont._nest = self._nest
+                if self._debug:
+                    storage_end = self._stream.tell()
+                    self._stream.seek(storage_start)
+                    raw = self._stream.read(storage_end - storage_start)
+                    st_cont._raw = raw
+                    self._stream.seek(storage_end)
                 items.append(st_cont)
             elif header.storage_type == StorageType.VALUE:
                 value = self._read_value(header.length)
                 st_value = StorageValue(header=header, value=value)
                 st_value._nest = self._nest
+                if self._debug:
+                    storage_end = self._stream.tell()
+                    self._stream.seek(storage_start)
+                    raw = self._stream.read(storage_end - storage_start)
+                    st_value._raw = raw
+                    self._stream.seek(storage_end)
                 items.append(st_value)
             else:
                 raise StorageException(
@@ -236,43 +292,6 @@ class StorageParser:
 
         self._nest -= 1
         return items
-
-    def _read_header(self) -> StorageHeader:
-        """Read id, length, type of the chunk.
-        """
-        # Number of bytes denoting length of the chunk.
-        size_of_length = INT_S
-        # Identifier of a chunk.
-        idn = utils.read_short(self._stream)
-        chunk_length = utils.read_int(self._stream)
-        extended = False
-
-        if chunk_length == 0:
-            # It is an extended header and needs extra 64 bits.
-            extended = True
-            size_of_length = LONG_LONG_S
-            chunk_length = utils.read_long_long(self._stream)
-            assert chunk_length != 0, "Extended length cannot be zero"
-
-        storage_type = None
-        # if sign bit is set (length is negative), then the chunk itself
-        # contains more chunks, i.e. is a container
-        if chunk_length < 0:
-            storage_type = StorageType.CONTAINER
-            chunk_length = utils.unset_sign_bit(chunk_length, size_of_length)
-        else:
-            storage_type = StorageType.VALUE
-
-        header_length = SHORT_S + INT_S
-        if extended:
-            header_length += LONG_LONG_S
-
-        # We need only the length of the value
-        chunk_length -= header_length
-
-        header = StorageHeader(idn, chunk_length, storage_type,
-                               extended=extended)
-        return header
 
     def _read_value(self, length: int) -> bytes:
         return self._stream.read(length)

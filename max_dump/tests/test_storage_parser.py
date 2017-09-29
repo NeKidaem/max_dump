@@ -40,13 +40,12 @@ class ReadHeaderTests(unittest.TestCase):
             '0a 00 00 00'  # length without sign bit (positive)
         )
         ba = bytes.fromhex(ba_hex)
-        parser = sp.StorageParser(self.valid_max_fname)
-        parser._stream = io.BytesIO(ba)
-        header = parser._read_header()
-        res_header = sp.StorageHeader(idn=80, length=4,
+        ba_stream = io.BytesIO(ba)
+        header = sp.StorageHeader.from_bytes(ba_stream)
+        ref_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.VALUE,
                                       extended=False)
-        self.assertEqual(header, res_header)
+        self.assertEqual(header, ref_header)
 
     def test_read_header_container(self):
         # binary header, container
@@ -55,9 +54,8 @@ class ReadHeaderTests(unittest.TestCase):
             '0a 00 00 80'  # length with sign bit (negative)
         )
         ba = bytes.fromhex(ba_hex)
-        parser = sp.StorageParser(self.valid_max_fname)
-        parser._stream = io.BytesIO(ba)
-        header = parser._read_header()
+        ba_stream = io.BytesIO(ba)
+        header = sp.StorageHeader.from_bytes(ba_stream)
         res_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.CONTAINER,
                                       extended=False)
@@ -71,9 +69,8 @@ class ReadHeaderTests(unittest.TestCase):
             '12 00 00 00 00 00 00 00'  # 8-byte length
         )
         ba = bytes.fromhex(ba_hex)
-        parser = sp.StorageParser(self.valid_max_fname)
-        parser._stream = io.BytesIO(ba)
-        header = parser._read_header()
+        ba_stream = io.BytesIO(ba)
+        header = sp.StorageHeader.from_bytes(ba_stream)
         res_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.VALUE,
                                       extended=True)
@@ -87,9 +84,8 @@ class ReadHeaderTests(unittest.TestCase):
             '12 00 00 00 00 00 00 80'  # 8-byte length
         )
         ba = bytes.fromhex(ba_hex)
-        parser = sp.StorageParser(self.valid_max_fname)
-        parser._stream = io.BytesIO(ba)
-        header = parser._read_header()
+        ba_stream = io.BytesIO(ba)
+        header = sp.StorageHeader.from_bytes(ba_stream)
         res_header = sp.StorageHeader(idn=80, length=4,
                                       storage_type=sp.StorageType.CONTAINER,
                                       extended=True)
