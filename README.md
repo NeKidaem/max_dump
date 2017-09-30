@@ -1,6 +1,6 @@
 # max_dump
 
-Extract information from a max file.
+Extract data from the 3ds Max file.
 
 # Installation
 

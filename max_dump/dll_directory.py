@@ -16,15 +16,6 @@ class DllDirectoryType(Enum):
 
 
 class DllEntry(StorageContainer):
-    def __repr__(self):
-        class_name = self.__class__.__name__
-        ext = ("ext" if self.header.extended else "")
-        format_s = ("\n[{} {} {} {} {}]"
-                    .format(hex(self.header.idn), class_name,
-                            self.header.length, self.count, ext))
-        format_s = textwrap.indent(format_s, " " * self._nest * 2)
-        childs_s = '\n'.join(repr(c) for c in self.childs)
-        return '\n'.join([format_s, childs_s])
 
     @classmethod
     def _decode(cls, container):
@@ -83,7 +74,7 @@ class DllDecoder:
     def _decode_one(cls, node):
         idn = hex(node.idn)
         if idn not in cls.idn2class_map:
-            raise StorageException("Unknown storage id: {:x}".format(node.idn))
+            raise StorageException("Unknown storage id: 0x{:x}".format(node.idn))
 
         klass = cls.idn2class_map[idn]
         decoded_node = klass._decode(node)
