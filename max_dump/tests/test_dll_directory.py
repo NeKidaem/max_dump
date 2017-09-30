@@ -22,7 +22,7 @@ class DllDecoderTests(unittest.TestCase):
             '   69 03 50 46'
         )
         st_value = utils.one_storage_from_ba_hex(ba_hex, self.valid_max_fname)
-        dll_header = dld.DllDecoder._decode_one(st_value)
+        dll_header = dld.DllDecoder()._decode_one(st_value)
         dll_header_ref = dld.DllHeader._decode(st_value)
         self.assertEqual(dll_header, dll_header_ref)
 
@@ -58,7 +58,7 @@ class DllDecoderTests(unittest.TestCase):
             '       62 00 69 00 70 00 65 00 64 00 2E 00 64 00 6C 00 63 00'
         )
         st_container = utils.one_storage_from_ba_hex(ba_hex, self.valid_max_fname)
-        dll_entry = dld.DllDecoder._decode_one(st_container)
+        dll_entry = dld.DllDecoder()._decode_one(st_container)
 
         dll_entry_ref = dld.DllEntry._decode(st_container)
         dll_entry_ref.childs = [
@@ -88,7 +88,7 @@ class DllDecoderTests(unittest.TestCase):
             '       76 00 69 00 65 00 77 00 70 00 6F 00 72 00 74 00 6D 00 61 00 6E 00 61 00 67 00 65 00 72 00 2E 00 67 00 75 00 70 00'
         )
         st_containers = utils.all_storages_from_ba_hex(ba_hex, self.valid_max_fname)
-        dll_entries = dld.DllDecoder._decode_many(st_containers)
+        dll_entries = dld.DllDecoder()._decode_many(st_containers)
 
         dll_entry_ref_1 = dld.DllEntry._decode(st_containers[0])
         dll_entry_ref_1.childs = [

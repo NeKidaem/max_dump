@@ -8,6 +8,7 @@ import hexdump
 from .storage_parser import (StorageContainer, StorageValue, StorageException,
                              StorageType)
 from . import utils
+from .abc_decoder import AbstractDecoder
 
 
 class DllDirectoryType(Enum):
@@ -82,35 +83,16 @@ class DllHeader(StorageValue):
         return inst
 
 
-class DllDecoder:
+class DllDecoder(AbstractDecoder):
     idn2class_map = {
-        '0x2037': DllName,
-        '0x2038': DllEntry,
-        '0x2039': DllDescription,
-        '0x21c0': DllHeader,
+        0x2037: DllName,
+        0x2038: DllEntry,
+        0x2039: DllDescription,
+        0x21c0: DllHeader,
     }
-    CONTAINERS = {'0x2038'}
-    NODES = {'0x2037', '0x2039', '0x21c0'}
+    CONTAINERS = {0x2038}
+    NODES = {0x2037, 0x2039, 0x21c0}
 
-    @classmethod
-    def decode(cls, nodes):
-        return cls._decode_many(nodes)
-
-    @classmethod
-    def _decode_one(cls, node):
-        idn = hex(node.idn)
-        if idn not in cls.idn2class_map:
-            raise StorageException(
-                "Unknown storage id: 0x{:x}".format(node.idn))
-
-        klass = cls.idn2class_map[idn]
-        decoded_node = klass._decode(node)
-
-        if idn in cls.CONTAINERS:
-            decoded_node.childs = cls._decode_many(node.childs)
-
-        return decoded_node
-
-    @classmethod
-    def _decode_many(cls, nodes):
-        return [cls._decode_one(node) for node in nodes]
+    @staticmethod
+    def _raise_unknown_id_exc(idn):
+        raise StorageException("Unknown Dll storage id: 0x{:x}".format(idn))
