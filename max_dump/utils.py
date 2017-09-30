@@ -104,19 +104,22 @@ def slots(klass: type) -> Iterable:
                                for cls in klass.__mro__)
 
 
-class CommonEqualityMixin:
-
-    __slots__ = ()
-
+class SimpleEqualityMixin:
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            my_slots = list(slots(self.__class__))
-            other_slots = list(slots(other.__class__))
-            if my_slots == other_slots:
-                 attr_getters = [operator.attrgetter(attr) for attr in my_slots]
-                 return all(getter(self) == getter(other) for getter in attr_getters)
-
+            return vars(other) == vars(self)
         return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+class NameValueMixin:
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.name = name
+
+    @property
+    def _props(self):
+        name = f"name: {self.name}"
+        return [name]

@@ -46,6 +46,26 @@ class ReadHeaderTests(unittest.TestCase):
                                       extended=False)
         self.assertEqual(header, ref_header)
 
+    def test_header_inequality(self):
+        ba_hex = (
+            '51 00 '
+            '1a 00 00 00'
+        )
+        ba = bytes.fromhex(ba_hex)
+        ba_stream = io.BytesIO(ba)
+        header_1 = sp.StorageHeader.from_bytes(
+                io.BytesIO(bytes.fromhex(ba_hex))
+        )
+        ba_hex = (
+            '50 00 '
+            '0a 00 00 00'
+        )
+        header_2 = sp.StorageHeader.from_bytes(
+                io.BytesIO(bytes.fromhex(ba_hex))
+        )
+
+        self.assertNotEqual(header_1, header_2)
+
     def test_read_header_container(self):
         # binary header, container
         ba_hex = (

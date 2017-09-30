@@ -30,11 +30,9 @@ class StorageException(Exception):
     """
 
 
-class StorageHeader(utils.CommonEqualityMixin):
+class StorageHeader(utils.SimpleEqualityMixin):
     """Storage header.
     """
-    __slots__ = ("idn", "length", "storage_type", "extended")
-
     def __init__(
             self,
             idn: int,
@@ -94,11 +92,9 @@ class StorageHeader(utils.CommonEqualityMixin):
         return header
 
 
-class StorageBase(utils.CommonEqualityMixin):
+class StorageBase(utils.SimpleEqualityMixin):
     """Storage base class.
     """
-    __slots__ = ("header", "_nest", "_raw")
-
     def __init__(
             self,
             header: StorageHeader,
@@ -116,7 +112,6 @@ class StorageBase(utils.CommonEqualityMixin):
 class StorageValue(StorageBase):
     """Storage value.
     """
-    __slots__ = ("value", )
 
     def __init__(
             self,
@@ -163,8 +158,6 @@ class StorageContainer(StorageBase):
 
     Stores other containers.
     """
-    __slots__ = ("childs", )
-
     def __init__(
             self,
             header: StorageHeader,
@@ -204,8 +197,6 @@ class StorageParser:
 
     Represents chunks as a list of Storage-objects.
     """
-    __slots__ = ("_max_fname", "_stream", "_nest", "_debug", "_ole")
-
     def __init__(
             self,
             max_fname: str = None,
