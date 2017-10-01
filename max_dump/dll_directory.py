@@ -2,85 +2,89 @@
 """
 import textwrap
 from enum import Enum
+from struct import unpack
 
 import hexdump
 
+from . import storage_parser as sp
 from .storage_parser import (StorageContainer, StorageValue, StorageException,
                              StorageType)
 from . import utils
 from .abc_decoder import AbstractDecoder
 
 
-class DllDirectoryType(Enum):
-    DLL_ENTRY = 0  # container type
-    DLL_NAME = 1
-    DLL_DESCRIPTION = 2
+class DllEntry(utils.SimpleEqualityMixin):
+    def __init__(
+            self,
+            name: str,
+            description: str
+    ) -> None:
+        self.name = name
+        self.description = description
 
-
-class DllEntry(StorageContainer):
     @classmethod
-    def _decode(cls, container):
-        new_childs = []
-        inst = cls(header=container.header, childs=new_childs)
-        inst._nest = container._nest
+    def _decode(cls, container: sp.StorageContainer) -> 'DllEntry':
+        assert len(container.childs) == 2
+        dll_description = DllDescription._decode(container.childs[0])
+        dll_name = DllName._decode(container.childs[1])
+        inst = cls(name=dll_name.decoded, description=dll_description.decoded)
         return inst
-
-    @property
-    def name(self):
-        return self.childs[1].name
-
-    @property
-    def description(self):
-        return self.childs[0].name
 
     def __repr__(self):
         class_name = self.__class__.__name__
-        ext = ("ext" if self.header.extended else "")
-        format_s = ("\n[{idn} {name} {count} <{nest}> {ext}]"
-                    .format(idn=hex(self.header.idn),
-                            name=class_name,
-                            count=self.count,
-                            nest=self._nest,
-                            ext=ext))
-        format_s = textwrap.indent(format_s, " " * self._nest * 2)
-        childs_s = '\n'.join(textwrap.indent(x, " " * self._nest * 4)
-                             for x in [self.name, self.description])
-        return '\n'.join([format_s, childs_s])
+        format_s = f"[{class_name} {self.name}]"
+        desc_s = textwrap.indent(self.description, ' ' * 4)
+        return f'\n{format_s}\n{desc_s}\n'
 
 
-class DllNodeDecodeMixin:
-    @classmethod
-    def _decode(cls, storage_value):
-        inst = cls(
-            name=storage_value.value.decode('utf-16'),
-            header=storage_value.header,
-            value=storage_value.value,
-            nest=storage_value._nest,
-        )
-        return inst
-
-
-class DllName(utils.NameValueMixin, StorageValue, DllNodeDecodeMixin):
+class DllName(
+        utils.SimpleEqualityMixin,
+        utils.UCStringDecodedMixin,
+        utils.ReprMixin,
+    ):
     """Name of the dll.
     """
+    @classmethod
+    def _decode(cls, st_value: sp.StorageValue) -> 'DllName':
+        return cls(decoded=st_value.value.decode('utf-16'))
 
 
-class DllDescription(utils.NameValueMixin, StorageValue, DllNodeDecodeMixin):
+class DllDescription(
+        utils.SimpleEqualityMixin,
+        utils.UCStringDecodedMixin,
+        utils.ReprMixin,
+    ):
     """Description of the dll.
     """
+    @classmethod
+    def _decode(cls, st_value: sp.StorageValue) -> 'DllDescription':
+        return cls(decoded=st_value.value.decode('utf-16'))
 
 
-class DllHeader(StorageValue):
+class DllHeader(utils.SimpleEqualityMixin):
     """Header of the DllDirectory stream.
     """
+    def __init__(self, value: bytes) -> None:
+            self.value = value
+
     @classmethod
-    def _decode(cls, storage_value):
+    def _decode(cls, storage_value: sp.StorageValue) -> 'DllHeader':
         inst = cls(
-            header=storage_value.header,
             value=storage_value.value,
-            nest=storage_value._nest,
         )
         return inst
+
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        format_s = f"[{class_name}]"
+        props = [
+                f"hex: {hexdump.dump(self.value)}",
+                f"ascii: {utils.bin2ascii(self.value)}",
+                f"int: {unpack('i', self.value)[0]}",
+        ]
+        props_s = '\n'.join(textwrap.indent(str(prop), " " * 4)
+                            for prop in props)
+        return f"\n{format_s}\n{props_s}\n"
 
 
 class DllDecoder(AbstractDecoder):

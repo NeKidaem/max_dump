@@ -32,7 +32,7 @@ class ClassHeader(sp.StorageValue):
         self.super_class_id = super_class_id
 
     @classmethod
-    def _decode(cls, st_value: sp.StorageValue) -> 'ClassEntry':
+    def _decode(cls, st_value: sp.StorageValue) -> 'ClassHeader':
         assert len(st_value.value) == 16, \
             "Length of a class header string must be 16"
         dll_index, *class_id, super_class_id = unpack('4i', st_value.value)

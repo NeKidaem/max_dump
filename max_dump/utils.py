@@ -5,6 +5,7 @@ import io
 import logging
 import operator
 import string
+import textwrap
 from itertools import chain
 from typing import Dict, Iterable, Hashable, Union, List
 from collections import defaultdict
@@ -114,12 +115,22 @@ class SimpleEqualityMixin:
         return not self.__eq__(other)
 
 
-class NameValueMixin:
-    def __init__(self, name: str, *args, **kwargs) -> None:
+class UCStringDecodedMixin:
+    def __init__(self, decoded: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.name = name
+        self.decoded = decoded
 
     @property
     def _props(self):
-        name = f"name: {self.name}"
-        return [name]
+        decoded = f"decoded: {self.decoded}"
+        return [decoded]
+
+
+class ReprMixin:
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        format_s = f"[{class_name}]"
+        props = self._props
+        props_s = '\n'.join(textwrap.indent(str(prop), " " * 4)
+                            for prop in props)
+        return f"\n{format_s}\n{props_s}\n"
