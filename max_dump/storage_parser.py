@@ -55,9 +55,11 @@ class StorageHeader(utils.SimpleEqualityMixin):
                 .format(hex(self.idn), self.length, s_t, ext))
 
     @classmethod
-    def from_bytes(cls, ba_stream: io.BytesIO) -> 'StorageHeader':
+    def from_bytes(cls, ba_stream: Union[str, io.BytesIO]) -> 'StorageHeader':
         """Read id, length, type of the chunk.
         """
+        if isinstance(ba_stream, str):
+            ba_stream = io.BytesIO(bytes.fromhex(ba_stream))
         # Number of bytes denoting length of the chunk.
         size_of_length = INT_S
         # Identifier of a chunk.

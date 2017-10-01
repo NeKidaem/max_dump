@@ -1,0 +1,3 @@
+[run]
+include = max_dump/*
+omit = *tests*

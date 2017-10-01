@@ -35,7 +35,7 @@ class ClassHeader(sp.StorageValue):
         assert len(st_value.value) == 16, \
             "Length of a class header string must be 16"
         dll_index, *class_id, super_class_id = unpack('4i', st_value.value)
-        return cls(dll_index, class_id, super_class_id,
+        return cls(dll_index, tuple(class_id), super_class_id,
                    header=st_value.header,
                    nest=st_value._nest,
                    value=st_value.value)

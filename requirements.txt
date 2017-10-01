@@ -1,3 +1,4 @@
 attrs
 hexdump
 olefile
+coverage
