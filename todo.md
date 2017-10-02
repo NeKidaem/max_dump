@@ -11,7 +11,7 @@ ClassHeader.dll_index is the index of DllEntry containing the class.
 
 01.10.17
 
-  - Write tests for ClassEntry.link
+  + Write tests for ClassEntry.link
 
   + Remove redundant attributes from derived classes
 
@@ -23,3 +23,5 @@ ClassHeader.dll_index is the index of DllEntry containing the class.
 
   It may be interesting to measure the execution time of tests before and after
   the task is completed.
+
+  - Hard and almost final task: write decoder for Scene stream
