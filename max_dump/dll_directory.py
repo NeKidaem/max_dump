@@ -13,7 +13,11 @@ from . import utils
 from .abc_decoder import AbstractDecoder
 
 
-class DllEntry(utils.SimpleEqualityMixin):
+class DllEntry(
+        utils.RawValueMixin,
+        utils.DecodeBaseMixin,
+        utils.SimpleEqualityMixin,
+):
     def __init__(
             self,
             name: str,
@@ -27,8 +31,11 @@ class DllEntry(utils.SimpleEqualityMixin):
         assert len(container.childs) == 2
         dll_description = DllDescription._decode(container.childs[0])
         dll_name = DllName._decode(container.childs[1])
-        inst = cls(name=dll_name.decoded, description=dll_description.decoded)
-        return inst
+        return super()._decode(
+                name=dll_name.decoded,
+                description=dll_description.decoded,
+                st_base=container,
+        )
 
     def __repr__(self):
         class_name = self.__class__.__name__
@@ -65,7 +72,11 @@ class DllDescription(
         return super()._decode(st_base=st_value)
 
 
-class DllHeader(utils.SimpleEqualityMixin):
+class DllHeader(
+        utils.RawValueMixin,
+        utils.DecodeBaseMixin,
+        utils.SimpleEqualityMixin,
+):
     """Header of the DllDirectory stream.
     """
 
@@ -73,11 +84,11 @@ class DllHeader(utils.SimpleEqualityMixin):
         self.value = value
 
     @classmethod
-    def _decode(cls, storage_value: sp.StorageValue) -> 'DllHeader':
-        inst = cls(
-            value=storage_value.value,
+    def _decode(cls, st_value: sp.StorageValue) -> 'DllHeader':
+        return super()._decode(
+            value=st_value.value,
+            st_base=st_value,
         )
-        return inst
 
     def __repr__(self):
         class_name = self.__class__.__name__
