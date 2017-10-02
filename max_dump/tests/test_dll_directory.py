@@ -61,10 +61,6 @@ class DllDecoderTests(unittest.TestCase):
         dll_entry = dld.DllDecoder()._decode_one(st_container)
 
         dll_entry_ref = dld.DllEntry._decode(st_container)
-        dll_entry_ref.childs = [
-                dld.DllDescription._decode(st_container.childs[0]),
-                dld.DllName._decode(st_container.childs[1]),
-        ]
 
         self.assertEqual(dll_entry, dll_entry_ref)
 
@@ -91,16 +87,8 @@ class DllDecoderTests(unittest.TestCase):
         dll_entries = dld.DllDecoder()._decode_many(st_containers)
 
         dll_entry_ref_1 = dld.DllEntry._decode(st_containers[0])
-        dll_entry_ref_1.childs = [
-                dld.DllDescription._decode(st_containers[0].childs[0]),
-                dld.DllName._decode(st_containers[0].childs[1]),
-        ]
 
         dll_entry_ref_2 = dld.DllEntry._decode(st_containers[1])
-        dll_entry_ref_2.childs = [
-                dld.DllDescription._decode(st_containers[1].childs[0]),
-                dld.DllName._decode(st_containers[1].childs[1]),
-        ]
         dll_entries_ref = [
             dll_entry_ref_1,
             dll_entry_ref_2,

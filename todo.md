@@ -13,7 +13,7 @@ ClassHeader.dll_index is the index of DllEntry containing the class.
 
   - Write tests for ClassEntry.link
 
-  - Remove redundant attributes from derived classes
+  + Remove redundant attributes from derived classes
 
   ClassName does not need to hold the original binary value, as well as
   the nesting level, idn, length, storage_type and so on.

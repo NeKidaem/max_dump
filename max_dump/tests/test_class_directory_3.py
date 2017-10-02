@@ -28,9 +28,6 @@ class ClassDirectoryTests(unittest.TestCase):
                 dll_index=-1,
                 class_id=(0x1f58f, 0x3a29f),
                 super_class_id=0x1160,
-                header=st_value.header,
-                value=st_value.value,
-                nest=st_value._nest
         )
         self.assertEqual(header, decoded_header)
 
@@ -43,10 +40,7 @@ class ClassDirectoryTests(unittest.TestCase):
         st_value = utils.one_storage_from_ba_hex(ba_hex, self.valid_max_fname)
         decoded_name = cd.ClassDecoder()._decode_one(st_value)
         name = cd.ClassName(
-                name='AnchorCustomAttribute',
-                header=st_value.header,
-                value=st_value.value,
-                nest=st_value._nest
+                decoded='AnchorCustomAttribute',
         )
         self.assertEqual(name, decoded_name)
 
@@ -64,20 +58,18 @@ class ClassDirectoryTests(unittest.TestCase):
         st_cont = utils.one_storage_from_ba_hex(ba_hex, self.valid_max_fname)
         decoded_entry = cd.ClassDecoder()._decode_one(st_cont)
 
-        entry = cd.ClassEntry(header=st_cont.header, childs=[
-            cd.ClassHeader(
+        entry = cd.ClassEntry(
+            header=cd.ClassHeader(
                 dll_index=-1,
                 class_id=(0x1f58f, 0x3a29f),
                 super_class_id=0x1160,
-                header=st_cont.childs[0].header,
-                value=st_cont.childs[0].value,
-                nest=st_cont.childs[0]._nest
             ),
-            cd.ClassName(
-                name='AnchorCustomAttribute',
-                header=st_cont.childs[1].header,
-                value=st_cont.childs[1].value,
-                nest=st_cont.childs[1]._nest
+            name=cd.ClassName(
+                decoded='AnchorCustomAttribute',
             ),
-        ])
+        )
+
         self.assertEqual(decoded_entry, entry)
+
+    #  def test_link_builtin_class_entry(self):
+        #  raise NotImplementedError()

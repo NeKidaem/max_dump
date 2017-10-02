@@ -38,10 +38,10 @@ class DllEntry(utils.SimpleEqualityMixin):
 
 
 class DllName(
-        utils.SimpleEqualityMixin,
-        utils.UCStringDecodedMixin,
-        utils.ReprMixin,
-    ):
+    utils.SimpleEqualityMixin,
+    utils.UCStringDecodedMixin,
+    utils.ReprMixin,
+):
     """Name of the dll.
     """
     @classmethod
@@ -50,10 +50,10 @@ class DllName(
 
 
 class DllDescription(
-        utils.SimpleEqualityMixin,
-        utils.UCStringDecodedMixin,
-        utils.ReprMixin,
-    ):
+    utils.SimpleEqualityMixin,
+    utils.UCStringDecodedMixin,
+    utils.ReprMixin,
+):
     """Description of the dll.
     """
     @classmethod
@@ -64,8 +64,9 @@ class DllDescription(
 class DllHeader(utils.SimpleEqualityMixin):
     """Header of the DllDirectory stream.
     """
+
     def __init__(self, value: bytes) -> None:
-            self.value = value
+        self.value = value
 
     @classmethod
     def _decode(cls, storage_value: sp.StorageValue) -> 'DllHeader':
@@ -78,9 +79,9 @@ class DllHeader(utils.SimpleEqualityMixin):
         class_name = self.__class__.__name__
         format_s = f"[{class_name}]"
         props = [
-                f"hex: {hexdump.dump(self.value)}",
-                f"ascii: {utils.bin2ascii(self.value)}",
-                f"int: {unpack('i', self.value)[0]}",
+            f"hex: {hexdump.dump(self.value)}",
+            f"ascii: {utils.bin2ascii(self.value)}",
+            f"int: {unpack('i', self.value)[0]}",
         ]
         props_s = '\n'.join(textwrap.indent(str(prop), " " * 4)
                             for prop in props)
@@ -94,7 +95,7 @@ class DllDecoder(AbstractDecoder):
         0x2039: DllDescription,
         0x21c0: DllHeader,
     }
-    CONTAINERS = {0x2038}
+    #  CONTAINERS = {0x2038}
     NODES = {0x2037, 0x2039, 0x21c0}
 
     @staticmethod
