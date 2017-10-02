@@ -21,13 +21,16 @@ class ClassHeader(utils.SimpleEqualityMixin, utils.ReprMixin):
         self.dll_index = dll_index
         self.class_id = class_id
         self.super_class_id = super_class_id
+        self._raw: bytes = None
 
     @classmethod
     def _decode(cls, st_value: sp.StorageValue) -> 'ClassHeader':
         assert len(st_value.value) == 16, \
             "Length of the class header string must be 16"
         dll_index, *class_id, super_class_id = unpack('4i', st_value.value)
-        return cls(dll_index, tuple(class_id), super_class_id)
+        inst = cls(dll_index, tuple(class_id), super_class_id)
+        inst._raw = st_value._raw
+        return inst
 
     @property
     def _props(self):
@@ -39,15 +42,17 @@ class ClassHeader(utils.SimpleEqualityMixin, utils.ReprMixin):
 
 
 class ClassName(
-    utils.SimpleEqualityMixin,
+    utils.RawValueMixin,
     utils.UCStringDecodedMixin,
+    utils.DecodeBaseMixin,
+    utils.SimpleEqualityMixin,
     utils.ReprMixin,
 ):
     """Name of the class.
     """
     @classmethod
     def _decode(cls, st_value: sp.StorageValue) -> 'ClassName':
-        return cls(decoded=st_value.value.decode('utf-16'))
+        return super()._decode(st_base=st_value)
 
 
 class ClassEntry(utils.SimpleEqualityMixin):
@@ -60,6 +65,7 @@ class ClassEntry(utils.SimpleEqualityMixin):
         self.class_id = header.class_id
         self.super_class_id = header.super_class_id
         self.name = name.decoded
+        self._raw: bytes = None
 
     @classmethod
     def _decode(cls, container: sp.StorageContainer) -> 'ClassEntry':
@@ -67,6 +73,7 @@ class ClassEntry(utils.SimpleEqualityMixin):
         header = ClassHeader._decode(container.childs[0])
         name = ClassName._decode(container.childs[1])
         inst = cls(header=header, name=name)
+        inst._raw = container._raw
         return inst
 
     def link(self, dll_entries: t.List[dld.DllEntry]) -> 'ClassEntryLinked':
@@ -74,18 +81,17 @@ class ClassEntry(utils.SimpleEqualityMixin):
         """
         if len(dll_entries) > 0 and isinstance(dll_entries[0], dld.DllHeader):
             dll_entries.pop(0)
-        dll_index = self.childs[0].dll_index
 
-        assert -2 <= dll_index < len(dll_entries), 'Invalid DLL entry index'
+        assert -2 <= self.dll_index < len(dll_entries), 'Invalid DLL entry index'
 
-        if dll_index == -1:
+        if self.dll_index == -1:
             dll_name = 'builtin'
             dll_description = 'Built-in type'
-        elif dll_index == -2:
+        elif self.dll_index == -2:
             dll_name = 'script'
             dll_description = 'Scripted class'
         else:
-            dll_entry = dll_entries[dll_index]
+            dll_entry = dll_entries[self.dll_index]
             dll_name = dll_entry.name
             dll_description = dll_entry.description
 

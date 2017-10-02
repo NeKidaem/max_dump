@@ -38,27 +38,31 @@ class DllEntry(utils.SimpleEqualityMixin):
 
 
 class DllName(
-    utils.SimpleEqualityMixin,
+    utils.RawValueMixin,
     utils.UCStringDecodedMixin,
+    utils.DecodeBaseMixin,
+    utils.SimpleEqualityMixin,
     utils.ReprMixin,
 ):
     """Name of the dll.
     """
     @classmethod
     def _decode(cls, st_value: sp.StorageValue) -> 'DllName':
-        return cls(decoded=st_value.value.decode('utf-16'))
+        return super()._decode(st_base=st_value)
 
 
 class DllDescription(
-    utils.SimpleEqualityMixin,
+    utils.RawValueMixin,
     utils.UCStringDecodedMixin,
+    utils.DecodeBaseMixin,
+    utils.SimpleEqualityMixin,
     utils.ReprMixin,
 ):
     """Description of the dll.
     """
     @classmethod
     def _decode(cls, st_value: sp.StorageValue) -> 'DllDescription':
-        return cls(decoded=st_value.value.decode('utf-16'))
+        return super()._decode(st_base=st_value)
 
 
 class DllHeader(utils.SimpleEqualityMixin):

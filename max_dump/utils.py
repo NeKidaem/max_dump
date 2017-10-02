@@ -116,7 +116,7 @@ class SimpleEqualityMixin:
 
 
 class UCStringDecodedMixin:
-    def __init__(self, decoded: str, *args, **kwargs) -> None:
+    def __init__(self, *args, decoded: str = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.decoded = decoded
 
@@ -124,6 +124,15 @@ class UCStringDecodedMixin:
     def _props(self):
         decoded = f"decoded: {self.decoded}"
         return [decoded]
+
+    @classmethod
+    def _decode(cls, *args, st_base=None, **kwargs):
+        return super()._decode(
+                *args,
+                st_base=st_base,
+                decoded=st_base.value.decode('utf-16'),
+                **kwargs
+        )
 
 
 class ReprMixin:
@@ -134,3 +143,22 @@ class ReprMixin:
         props_s = '\n'.join(textwrap.indent(str(prop), " " * 4)
                             for prop in props)
         return f"\n{format_s}\n{props_s}\n"
+
+
+class RawValueMixin:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._raw: bytes = None
+
+    @classmethod
+    def _decode(cls, *args, st_base=None, **kwargs):
+        inst = super()._decode(*args, st_base=st_base, **kwargs)
+        inst._raw = st_base._raw
+        return inst
+
+class DecodeBaseMixin:
+    @classmethod
+    def _decode(cls, *args, **kwargs):
+        if 'st_base' in kwargs:
+            del kwargs['st_base']
+        return cls(*args, **kwargs)
