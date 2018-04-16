@@ -1,10 +1,8 @@
 import argparse
 import json
-import os
 
 import attr
 import hexdump
-import olefile
 
 import max_dump
 from max_dump.file_props_parser import extract_file_props
@@ -15,20 +13,13 @@ from max_dump.scene_frontend import link_scene_and_class
 from max_dump.dump_cameras import dump_cameras
 
 
-STREAM_NAMES = ['ClassData', 'ClassDirectory3', 'Config', 'DllDirectory',
+STREAM_NAMES = ('ClassData', 'ClassDirectory3', 'Config', 'DllDirectory',
                 'FileAssetMetaData3', 'SaveConfigData', 'Scene',
-                'ScriptedCustAttribDefs', 'VideoPostQueue']
+                'ScriptedCustAttribDefs', 'VideoPostQueue')
 
 
 def dumps(c):
     return json.dumps(c, indent=4, ensure_ascii=False)
-
-
-def list_streams(max_fname):
-    ole = olefile.OleFileIO(max_fname)
-    streams = ole.listdir()
-    ole.close()
-    return list(*zip(*streams))
 
 
 def dump_stream(max_fname, stream_name):
@@ -51,7 +42,6 @@ def parse_stream(max_fname, stream_name):
 
 
 def main():
-    stream_names = STREAM_NAMES
     parser = argparse.ArgumentParser(
             description='List cameras in the max file'
     )
@@ -61,25 +51,13 @@ def main():
     parser.add_argument('--props', action="store_true", help=help)
 
     help = "Parse chunk-based stream"
-    parser.add_argument('--parse-stream', choices=stream_names,
+    parser.add_argument('--parse-stream', choices=STREAM_NAMES,
                         metavar='STREAM_NAME', help=help)
 
     help = "Print contents of the stream as hex string"
-    parser.add_argument('--dump-stream', choices=stream_names,
+    parser.add_argument('--dump-stream', choices=STREAM_NAMES,
                         metavar='STREAM_NAME', help=help)
-    help = "List streams"
-    parser.add_argument('--list-streams', action='store_true', help=help)
-
-    # TODO derive from ArgumentParser with custom error method to list
-    # available streams
     args = parser.parse_args()
-    print('#' * 20)
-    print(os.getcwd(), flush=True)
-    # XXX
-    #  import ipdb;ipdb.set_trace()
-
-
-    #  stream_names.extend(list_streams(args.max_fname))
 
     if args.parse_stream:
         parse_stream(args.max_fname, args.parse_stream)
@@ -89,8 +67,6 @@ def main():
         props = extract_file_props(args.max_fname)
         out = json.dumps(props, indent=4)
         print(out)
-    elif args.list_streams:
-        print(', '.join(stream_names))
     else:
         cams = dump_cameras(args.max_fname)
         print(dumps(cams))
